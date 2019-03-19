@@ -10,6 +10,6 @@ new Vue({
         </Frame>`,
 
     components: {
-        Home
+        Home,
     }
 }).$start();
