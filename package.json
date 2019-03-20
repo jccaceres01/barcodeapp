@@ -1,11 +1,11 @@
 {
   "nativescript": {
     "id": "org.nativescript.barcodeapp",
-    "tns-android": {
-      "version": "5.2.1"
-    },
     "tns-ios": {
       "version": "5.2.0"
+    },
+    "tns-android": {
+      "version": "5.2.1"
     }
   },
   "description": "NativeScript Application",
@@ -15,7 +15,9 @@
     "@fortawesome/fontawesome-free": "^5.7.2",
     "axios": "^0.18.0",
     "moment": "^2.24.0",
+    "nativescript-drop-down": "^5.0.0",
     "nativescript-theme-core": "~1.0.4",
+    "nativescript-ui-dataform": "^4.0.0",
     "nativescript-vue": "~2.0.0",
     "tns-core-modules": "~5.2.0"
   },

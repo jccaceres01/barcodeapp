@@ -39,7 +39,7 @@
             </Label>
           </StackLayout>
         </TabViewItem>
-
+        <!-- Lines Tab -->
         <TabViewItem title="Lineas">
           <GridLayout>
             <ListView for="item, in lines" @itemTap="">
@@ -80,21 +80,37 @@
             </ListView>
           </GridLayout>
         </TabViewItem>
+        <!-- New Line Tab -->
         <TabViewItem title="Nueva Linea">
-          <StackLayout orientation="vertical">
-            <!-- Cost Center listpicker -->
-            <!-- <Label text="Centro de Costo: " fontSize="20" />
-            <ListPicker :items="costCenters" v-model="costCenterSelectedIndex"
-              @selectedIndexChange="costCenterIndexChange" /> -->
-            <!-- Warehouse listpicker -->
-            <Label text="Bodega: " fontSize="20" />
-            <ListPicker :items="warehouses" v-model="warehouseSelectedIndex"
-              @selectedIndexChange="warehouseIndexChange" />
-            <!-- locations listpicker -->
-            <Label text="Localización: " fontSize="20" />
-            <ListPicker :items="locations" v-model="locationSelectedIndex"
-              @selectedIndexChange="locationIndexChange" />
-          </StackLayout>
+          <ScrollView orientation="vertical" width="99%" height="99%">
+            <StackLayout orientation="vertical">
+              <Label text="Centro de Costo: " fontSize="20" color="#3A53FF" />
+              <StackLayout orientation="horizontal" width="*" height="40">
+                <TextField :text="selectedCostCenter.value" textWrap="true" width="60%" editable="false" />
+                <Button text="Seleccionar" @tap="selectCostCenter" width="40%" id="ccbtn" />
+              </StackLayout>
+              <Label text="Bodega: " fontSize="20" color="#3A53FF" />
+              <StackLayout orientation="horizontal" width="*" height="40">
+                <TextField :text="selectedStorage.BODEGA" textWrap="true" width="60%" editable="false" />
+                <Button text="Seleccionar" @tap="selectStorage" width="40%" />
+              </StackLayout>
+              <Label text="Localización: " fontSize="20" color="#3A53FF" />
+              <StackLayout orientation="horizontal" width="*" height="40">
+                <TextField :text="selectedLocation.LOCALIZACION" textWrap="true" width="60%" editable="false" />
+                <Button text="Seleccionar" @tap="selectLocation" width="40%" />
+              </StackLayout>
+              <StackLayout orientation="horizontal" width="*" height="40">
+                <Label text="Habilitar Cantidades: " fontSize="20" color="#3A53FF" />
+                <Switch v-model="enableQuantity" />
+              </StackLayout>
+              <TextField v-model="quantity" hint="Cantidad" @textChange="" @returnPress="" keyboardType="number" :editable="enableQuantity"/>
+              <SearchBar hint="Buscar Codigo de Barras" v-model="barcodeCriteria" @textChange="" @submit="getItem" />
+              <TextField v-model="itemId" hint="Código Softland" @textChange="onTextChange" @returnPress="onReturnPress" keyboardType="text" editable="false" />
+              <Button text="Agregar Linea" @tap="addLine">
+                <Span class="fa" text.decode="&#xf0c7; "/>
+              </Button>
+            </StackLayout>
+          </ScrollView>
         </TabViewItem>
       </TabView>
     </GridLayout>
@@ -104,50 +120,36 @@
 <script>
   import conf from '../../customconfig.json'
   import axios from 'axios'
+  import CostCenter from './OutputsDialogs/CostCenter'
+  import StorageSelect from './OutputsDialogs/StorageSelect'
+  import LocationSelect from './OutputsDialogs/LocationSelect'
 
   export default {
     data() {
       return {
-        busy: false,
+        // Configs
         api: conf.api,
+        // Components
+        costCenter: CostCenter,
+        storageSelect: StorageSelect,
+        locationSelect: LocationSelect,
+        // Data
+        busy: false,
         tabSelectedIndex: 0,
         barcodeCriteria: '',
         itemId: '',
         lines: [],
-        warehouses: [],
         locations: [],
-        warehouseSelectedIndex: 0,
-        locationSelectedIndex: 0,
-        costCenters: [
-          {
-            id: '01-02-11',
-            value: 'Pueblo Viejo (LLD-SD1  El Llagal)',
-            toString: () => {
-              return 'Pueblo Viejo (LLD-SD1  El Llagal)'
-            }
-          },
-          {
-            id: '01-02-13',
-            value: 'Pueblo Viejo (Minería)',
-            toString: () => {
-              return 'Pueblo Viejo (Minería)'
-            }
-          },
-          {
-            id: '01-02-14',
-            value: ' H.S.E.- PVDC',
-            toString: () => {
-              return ' H.S.E.- PVDC'
-            }
-          }
-        ],
-        costCenterSelectedIndex: 0,
+        selectedCostCenter: {id: '', value: ''},
+        selectedStorage: {BODEGA: '', NOMBRE: ''},
+        selectedLocation: {BODEGA: '', LOCALIZACION: '', DESCRIPCION: ''},
         quantity: 1,
         enableQuantity: false
       }
     },
     created() {
       this.fillWarehouses()
+      // document.getElementById('ccbtn').focus()
     },
     methods: {
       loadOn() { this.busy = true },
@@ -192,6 +194,13 @@
         this.lines = []
         this.tabSelectedIndex = 0
       },
+      clearHalfForm() {
+        this.quantity = 1
+        this.barcodeCriteria = ''
+        this.enableQuantity = false
+        this.itemId = ''
+        this.loadOff()
+      },
       fillOutputLines() {
         this.loadOn()
         axios.get(this.api+'outputlines/'+this.output.DOCUMENTO_INV).then(res => {
@@ -220,22 +229,85 @@
             })
         }
       },
-      costCenterIndexChange(event) {},
-      warehouseIndexChange(event) {
-        this.loadOn()
-        axios.get(this.api+'localizacion/'+this.fillWarehouses[this.warehouseSelectedIndex]).then(res => {
-          this.locations = []
-          res.data.forEach(cb => {
-            this.locations.push({LOCALIZACION: cb.LOCALIZACION})
-          })
-          this.loadOff()
-        }).catch(er => {
-          alert(er).then(() => {
-            this.clearAll()
-          })
+      selectCostCenter() {
+        this.$showModal(this.costCenter).then(res => {
+          if (res != null) {
+            this.selectedCostCenter = res
+          } else {
+            alert('No se ha seleccionado ningun centro de costo')
+          }
         })
       },
-      locationIndexChange(event) {}
+      selectStorage() {
+        this.$showModal(this.storageSelect).then(res => {
+          if (res != null) {
+            this.selectedStorage = res
+            this.loadOn()
+            axios.get(this.api+'localizacion/'+this.selectedStorage.BODEGA).then(res => {
+              this.locations = res.data
+              this.loadOff()
+            }).catch(er => {
+              alert(er)
+              this.clearAll()
+            })
+          } else {
+            alert('No se ha seleccionado ninguna bodega.')
+          }
+        })
+      },
+      selectLocation() {
+        this.$showModal(this.locationSelect, {props: {locations: this.locations}}).then(res => {
+          if (res != null) {
+            this.selectedLocation = res
+          } else {
+            alert('No se selecciono una localización')
+          }
+        })
+      },
+      getItem() {
+        if (this.barcodeCriteria != '') {
+          this.loadOn()
+          axios.get(this.api+'buscar/'+this.barcodeCriteria).then(res => {
+            if (res.data.length > 0) {
+                this.itemId = res.data[0].ARTICULO
+                this.addLine()
+            } else {
+              alert('Respuesto no encontrado')
+            }
+          }).catch(er => {
+            alert(er)
+          })
+          this.loadOff()
+        } else {
+          alert('Debe rellenar el campo de busqueda con el código de barras')
+        }
+      },
+      addLine() {
+        if (
+          this.selectStorage.BODEGA != '' &&
+          this.selectedCostCenter.value != '' &&
+          this.selectedLocation.LOCALIZACION != '' &&
+          this.itemId != ''
+        ) {
+          this.loadOn()
+          axios.post(this.api+'outputline', {
+            documento_inv: this.output.DOCUMENTO_INV,
+            bodega: this.selectedStorage.BODEGA,
+            localizacion: this.selectedLocation.LOCALIZACION,
+            centro_costo: this.selectedCostCenter.id,
+            cantidad: this.quantity,
+            articulo: this.itemId
+          }).then(res => {
+            alert('Linea Agregada')
+            this.clearHalfForm()
+          }).catch(er => {
+            alert(er)
+            this.clearAll()
+          })
+        } else {
+          alert('No puede dejar campos vacios')
+        }
+      }
     },
     props: ['output']
   }
