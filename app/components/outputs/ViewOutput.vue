@@ -267,7 +267,11 @@
       getItem() {
         if (this.barcodeCriteria != '') {
           this.loadOn()
-          axios.get(this.api+'buscar/'+this.barcodeCriteria).then(res => {
+          axios.get(this.api+'buscar', {
+            params: {
+              barcode: this.barcodeCriteria
+            }
+          }).then(res => {
             if (res.data.length > 0) {
                 this.itemId = res.data[0].ARTICULO
                 this.addLine()

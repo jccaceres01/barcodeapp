@@ -3,7 +3,7 @@
     <StackLayout>
       <ActivityIndicator :busy="busy" />
       <Label text="Seleccionar Repuesto" style="font-size:20; font-weight:bold;" />
-      <ListView for="item in items" @itemTap="sendSelected" v-show="!hasItemSelected" height="*" >
+      <ListView for="item in items" @itemTap="sendSelected" v-show="!hasItemSelected" height="99%" width="99%">
         <v-template>
           <StackLayout orientation="vertical">
             <Label height="20" width="*">

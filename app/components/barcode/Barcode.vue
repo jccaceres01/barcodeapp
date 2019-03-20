@@ -86,7 +86,11 @@
       fintItems() {
         if (this.searchCriteria.trim() != ''){
           this.$showModal(this.itemSelect, {fullscreen: true, props: {criteria: this.searchCriteria}}).then(res => {
-            this.itemSelected = res
+            if (res != null) {
+              this.itemSelected = res
+            } else {
+              this.searchCriteria = ''
+            }
           }).catch(er => {
             alert(er)
               .then(() => {

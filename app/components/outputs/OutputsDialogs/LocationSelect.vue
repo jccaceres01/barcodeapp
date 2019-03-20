@@ -4,7 +4,7 @@
       <Label text="Localizaciones" fontSize="30" />
       <ListView for="item in locations" @itemTap="returnValue" width="*" height="100%">
         <v-template>
-          <Label :text="item.DESCRIPCION" fontSize="20" />
+          <Label :text="item.LOCALIZACION" fontSize="20" />
         </v-template>
       </ListView>
     </StackLayout>
