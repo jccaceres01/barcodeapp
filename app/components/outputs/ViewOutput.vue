@@ -179,8 +179,32 @@
           .then(result => {
             if (result) {
               this.loadOn()
-              axios.delete(this.api+'outputlines/'+this.output.DOCUMENTO_INV+'/'+item.LINEA_DOC_INV).then(res => {
-                alert('Linea Borrada!')
+              axios.delete(this.api+'outputlines', {
+                params: {
+                  documento_inv: this.output.DOCUMENTO_INV,
+                  articulo: item.ARTICULO,
+                  bodega: item.BODEGA,
+                  localizacion: item.LOCALIZACION,
+                  linea: item.LINEA_DOC_INV,
+                  cantidad: item.CANTIDAD
+                }
+              }).then(res => {
+                switch (res.data) {
+                  case 'noExistsLote':
+                    alert('No se encontro el lote de la existencia')
+                    break;
+                  case 'noExistsBodega':
+                    alert('No se encontro la existencia en bodega')
+                    break;
+                  case 'noExistsReserva':
+                    alert('No se encontro la existencia en reserva')
+                    break;
+                  case 'lineDroped':
+                    alert('Linea Borrada')
+                    break;
+                  default:
+                    break;
+                }
                 this.fillOutputLines()
               }).catch(er => {
                 alert(er).then(() => {
@@ -273,8 +297,13 @@
             }
           }).then(res => {
             if (res.data.length > 0) {
+              if (res.data.length > 1) {
+                alert('Existen varios articulos con este código de barras')
+                this.barcodeCriteria = ''
+              } else {
                 this.itemId = res.data[0].ARTICULO
                 this.addLine()
+              }
             } else {
               alert('Respuesto no encontrado')
             }
@@ -302,11 +331,20 @@
             cantidad: this.quantity,
             articulo: this.itemId
           }).then(res => {
-            alert('Linea Agregada')
+            switch (res.data) {
+              case 'inserted':
+                alert('Linea Agregada')
+                break;
+              case 'exceeded':
+                alert('No hay existencia suficiente en lote')
+                break;
+              default:
+                break;
+            }
             this.clearHalfForm()
           }).catch(er => {
             alert(er)
-            this.clearAll()
+            this.clearHalfForm()
           })
         } else {
           alert('No puede dejar campos vacios')

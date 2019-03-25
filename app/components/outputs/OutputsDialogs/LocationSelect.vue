@@ -2,7 +2,8 @@
   <Page>
     <StackLayout>
       <Label text="Localizaciones" fontSize="30" />
-      <ListView for="item in locations" @itemTap="returnValue" width="*" height="100%">
+      <TextField v-model="criteria" hint="Filtrar" @returnPress="" keyboardType="text "/>
+      <ListView for="item in filtered" @itemTap="returnValue" width="*" height="100%">
         <v-template>
           <Label :text="item.LOCALIZACION" fontSize="20" />
         </v-template>
@@ -15,6 +16,15 @@
   export default {
     data() {
       return {
+        criteria: ''
+      }
+    },
+    computed: {
+      filtered() {
+        return this.locations.filter(cb => {
+          return (cb.LOCALIZACION.trim().toLowerCase()
+            .indexOf(this.criteria.toLowerCase()) !== -1)
+        })
       }
     },
     created() {
