@@ -101,7 +101,7 @@
               </StackLayout>
               <StackLayout orientation="horizontal" width="*" height="40">
                 <Label text="Habilitar Cantidades: " fontSize="20" color="#3A53FF" />
-                <Switch v-model="enableQuantity" />
+                <Switch v-model="enableQuantity" @checkedChange="onCheckedChange" />
               </StackLayout>
               <TextField v-model="quantity" hint="Cantidad" @textChange="" @returnPress="" keyboardType="number" :editable="enableQuantity"/>
               <SearchBar hint="Buscar Codigo de Barras" v-model="barcodeCriteria" @textChange="" @submit="getItem" />
@@ -225,6 +225,11 @@
         this.itemId = ''
         this.loadOff()
       },
+      onCheckedChange() {
+        if (this.enableQuantity == false) {
+          this.quantity = 1
+        }
+      },
       fillOutputLines() {
         this.loadOn()
         axios.get(this.api+'outputlines/'+this.output.DOCUMENTO_INV).then(res => {
@@ -337,6 +342,12 @@
                 break;
               case 'exceeded':
                 alert('No hay existencia suficiente en lote')
+                break;
+              case 'noExistsLote' :
+                alert('No se encontro el respuesto en lote (\"Localización\")')
+                break;
+              case 'noExistsBodega':
+                alert('No hay existencia en bodega')
                 break;
               default:
                 break;

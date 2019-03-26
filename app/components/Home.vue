@@ -8,16 +8,20 @@
               android.position="popup" />
         </ActionBar>
 
-        <GridLayout columns="150, 150" rows="150, 150">
-          <Button @tap="$navigateTo(barcode)" row="0" col="0">
+        <WrapLayout>
+          <Button @tap="$navigateTo(barcode)" width="50%" height="50%" >
             <Span class="fa bigicon" text.decode="&#xf02a; "/>
             <Span text="Cod. Barras" class="info" />
           </Button>
-          <Button @tap="$navigateTo(outputs)" row="0" col="1" >
+          <Button @tap="$navigateTo(outputs)" width="50%" height="50%" >
             <Span class="fa bigicon" text.decode="&#xf16b; "/>
             <Span text="Salidas" class="info" />
           </Button>
-        </GridLayout>
+          <Button @tap="$navigateTo(search)" width="50%" height="50%" >
+            <Span class="fa bigicon" text.decode="&#xf002; "/>
+            <Span text="Colsultar" class="info" />
+          </Button>
+        </WrapLayout>
     </Page>
 </template>
 
@@ -25,6 +29,7 @@
   import conf from '../customconfig.json'
   import Barcode from './barcode/Barcode'
   import Outputs from './outputs/Outputs'
+  import Search from './search/Search'
   import ConfigView from './ConfigView'
 
   export default {
@@ -35,7 +40,8 @@
         appName: conf.appname,
         barcode: Barcode,
         outputs: Outputs,
-        configView: ConfigView
+        configView: ConfigView,
+        search: Search
       }
     },
     methods: {
