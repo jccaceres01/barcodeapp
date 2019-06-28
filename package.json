@@ -5,27 +5,27 @@
       "version": "5.2.0"
     },
     "tns-android": {
-      "version": "5.2.1"
+      "version": "5.4.0"
     }
   },
   "description": "NativeScript Application",
   "license": "SEE LICENSE IN <your-license-filename>",
   "repository": "<fill-your-repository-here>",
   "dependencies": {
-    "@fortawesome/fontawesome-free": "^5.7.2",
-    "axios": "^0.18.0",
+    "@fortawesome/fontawesome-free": "^5.9.0",
+    "axios": "^0.18.1",
     "moment": "^2.24.0",
-    "nativescript-drop-down": "^5.0.0",
-    "nativescript-theme-core": "~1.0.4",
-    "nativescript-ui-dataform": "^4.0.0",
+    "nativescript-drop-down": "^5.0.1",
+    "nativescript-theme-core": "^1.0.6",
+    "nativescript-ui-dataform": "^4.0.1",
     "nativescript-vue": "~2.0.0",
-    "tns-core-modules": "~5.2.0"
+    "tns-core-modules": "^5.4.3"
   },
   "devDependencies": {
     "@babel/core": "~7.1.0",
     "@babel/preset-env": "~7.1.0",
-    "babel-loader": "~8.0.0",
-    "nativescript-dev-webpack": "~0.20.0",
+    "babel-loader": "^8.0.6",
+    "nativescript-dev-webpack": "^0.20.3",
     "nativescript-vue-template-compiler": "~2.0.0",
     "node-sass": "~4.9.0",
     "vue-loader": "~15.4.0"

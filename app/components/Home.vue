@@ -21,6 +21,10 @@
             <Span class="fa bigicon" text.decode="&#xf002; "/>
             <Span text="Colsultar" class="info" />
           </Button>
+          <Button @tap="$navigateTo(inventory)" width="50%" height="50%" >
+            <Span class="fas bigicon" text.decode="&#xf46c; "/>
+            <Span text="Boletas Inv." class="info" />
+          </Button>
         </WrapLayout>
     </Page>
 </template>
@@ -30,6 +34,7 @@
   import Barcode from './barcode/Barcode'
   import Outputs from './outputs/Outputs'
   import Search from './search/Search'
+  import InventoryTicket from './inventory/InventoryTicket'
   import ConfigView from './ConfigView'
 
   export default {
@@ -41,7 +46,8 @@
         barcode: Barcode,
         outputs: Outputs,
         configView: ConfigView,
-        search: Search
+        search: Search,
+        inventory: InventoryTicket
       }
     },
     methods: {
@@ -56,6 +62,10 @@
 
     // Custom styles
     .fa {
+        color: $accent-dark;
+    }
+
+    .fas {
         color: $accent-dark;
     }
 
