@@ -6,7 +6,7 @@
 
     <StackLayout orientation="vertical">
       <ActivityIndicator :busy="busy" @busyChange="" />
-      <Label text="Nueva Salida: " fontSize="30" color="#3A53FF" />
+      <Label text="Nueva Salida: " fontSize="30" class="fa" />
       <TextField v-model="ni" hint="Número Interno" @textChange="" @returnPress="addNewOutput" keyboardType="text" height="50" class="t-uppercase" />
       <Button text="Crear Salida" @tap="addNewOutput" />
     </StackLayout>
@@ -61,6 +61,14 @@
   // Custom styles
   .fa {
       color: $accent-dark;
+  }
+
+  .accent-bg {
+    background: $accent-dark;
+  }
+
+  .scc-yellow {
+    color: $scc-yellow;
   }
 
   .info {

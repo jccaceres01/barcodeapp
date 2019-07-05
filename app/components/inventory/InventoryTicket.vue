@@ -22,11 +22,11 @@
       <ListView for="item in filtered" @itemTap="ticketDetail" height="auto">
         <v-template>
           <GridLayout columns="auto, *, auto" rows="auto, auto">
-            <Label backgroundColor="#3A53FF" verticalAlignment="center" col="0" row="0" :text="item.BOLETA" width="80" height="80" margin="3" color="#ffffff" />
+            <Label class="accent-bg scc-yellow" verticalAlignment="center" col="0" row="0" :text="item.BOLETA" width="80" height="80" margin="3" />
             <StackLayout orientation="vertical" col="1" row="0">
               <Label textWrap="true">
                 <FormattedString>
-                  <Span text="Articulo: " style="font-size:20; color: #024dbe " />
+                  <Span text="Articulo: " style="font-size:20;" class="fa" />
                   <Span :text="item.ARTICULO" style="color:#8a8a8a; font-size:15" />
                   <Span text=" (" style="color:#8a8a8a; font-size:15" />
                   <Span :text="item.DESCRIPCION" style="color:#8a8a8a; font-size:15" />
@@ -35,19 +35,19 @@
               </Label>
               <Label textWrap="true">
                 <FormattedString>
-                  <Span text="Bodega: " style="font-size:20; color:#024dbe " />
+                  <Span text="Bodega: " style="font-size:20;" class="fa" />
                   <Span :text="item.BODEGA" style="color:#8a8a8a; font-size:15" />
                 </FormattedString>
               </Label>
               <Label textWrap="true">
                 <FormattedString>
-                  <Span text="Localizacion: " style="font-size:20; color:#024dbe " />
+                  <Span text="Localizacion: " style="font-size:20;" class="fa" />
                   <Span :text="item.LOCALIZACION" style="color:#8a8a8a; font-size:15" />
                 </FormattedString>
               </Label>
               <Label textWrap="true">
                 <FormattedString>
-                  <Span text="Cantidad: " style="font-size:20; color:#024dbe " />
+                  <Span text="Cantidad: " style="font-size:20;" class="fa" />
                   <Span :text="item.CANT_DISP_RESERV" style="color:#8a8a8a; font-size:15" />
                 </FormattedString>
               </Label>
@@ -127,6 +127,14 @@
   // Custom styles
   .fa {
       color: $accent-dark;
+  }
+
+  .accent-bg {
+    background: $accent-dark;
+  }
+
+  .scc-yellow {
+    color: $scc-yellow;
   }
 
   .desc {

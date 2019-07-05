@@ -14,17 +14,17 @@
       <ListView for="item in outputs" @itemTap="showViewOutput">
         <v-template>
           <GridLayout columns="auto, *, auto" rows="auto, auto">
-            <Label backgroundColor="#3A53FF" verticalAlignment="center" col="0" row="0" :text="item.DOCUMENTO_INV" width="80" height="80" margin="3" color="#ffffff" />
+            <Label class="accent-bg scc-yellow" verticalAlignment="center" col="0" row="0" :text="item.DOCUMENTO_INV" width="80" height="80" margin="3"/>
             <StackLayout orientation="vertical" col="1" row="0">
               <Label textWrap="true">
                 <FormattedString>
-                  <Span text="Referencia: " style="font-size:20; color: #024dbe " />
+                  <Span text="Referencia: " style="font-size:20;" class="fa" />
                   <Span :text="item.REFERENCIA " style="color:#8a8a8a; font-size:15" />
                 </FormattedString>
               </Label>
               <Label textWrap="true">
                 <FormattedString>
-                  <Span text="Fecha: " style="font-size:20; color:#024dbe " />
+                  <Span text="Fecha: " style="font-size:20;" class="fa" />
                   <Span :text="item.FECHA_HOR_CREACION" style="color:#8a8a8a; font-size:15" />
                 </FormattedString>
               </Label>
@@ -91,6 +91,14 @@
   // Custom styles
   .fa {
       color: $accent-dark;
+  }
+
+  .accent-bg {
+    background: $accent-dark;
+  }
+
+  .scc-yellow {
+    color: $scc-yellow;
   }
 
   .info {

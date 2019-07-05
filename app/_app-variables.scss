@@ -4,7 +4,7 @@
 @import '~nativescript-theme-core/scss/light';
 
 // Custom colors
-$background-dark: #F8F8F8 !default;
+$background-dark: #202020 !default;
 $background-light: #FFFFFF !default;
 
 $blue-dark: #022734 !default;
@@ -13,7 +13,7 @@ $blue-50: rgba($blue-dark, 0.5) !default;
 $blue-20: rgba($blue-dark, 0.2) !default;
 $blue-10: rgba($blue-dark, 0.1) !default;
 
-$accent-dark: #3A53FF !default;
+$accent-dark: #202020 !default;
 $accent-light: #4781FE !default;
 
 $success-dark: #06CE6A !default;
@@ -30,6 +30,8 @@ $midnight-light: #14418B !default;
 
 $night-dark: #023141 !default;
 $night-light: #01526C !default;
+
+$scc-yellow: #FFFF00 !default;
 
 // Sizes
 $base-font-size: 11;
@@ -64,7 +66,7 @@ $side-drawer-background: #FFFFFF;
 
 // ActionBar
 $ab-background: $accent;
-$ab-color: $white;
+$ab-color: $scc-yellow;
 
 // Buttons
 $btn-color-inverse: $white;

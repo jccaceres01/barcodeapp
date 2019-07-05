@@ -45,29 +45,29 @@
             <ListView for="item, in lines" @itemTap="">
               <v-template>
                 <GridLayout columns="auto, *, auto" rows="auto, auto">
-                  <Label backgroundColor="#3A53FF" verticalAlignment="center" horizontalAlignment="center" fontSize="30" col="0" row="0" :text="item.LINEA_DOC_INV" width="80" height="80" margin="3" color="#ffffff" />
+                  <Label class="accent-bg scc-yellow" verticalAlignment="center" horizontalAlignment="center" fontSize="30" col="0" row="0" :text="item.LINEA_DOC_INV" width="80" height="80" margin="3" />
                   <StackLayout orientation="vertical" col="1" row="0">
                     <Label textWrap="true">
                       <FormattedString>
-                        <Span text="Repuesto: " style="font-size:18; color:#024dbe " />
+                        <Span text="Repuesto: " style="font-size:18;" class="fa" />
                         <Span :text="item.DESCRIPCION" style="color:#8a8a8a; font-size:13" />
                       </FormattedString>
                     </Label>
                     <Label textWrap="true">
                       <FormattedString>
-                        <Span text="Cod.Softland: " style="font-size:18; color:#024dbe " />
+                        <Span text="Cod.Softland: " style="font-size:18;" class="fa" />
                         <Span :text="item.ARTICULO" style="color:#8a8a8a; font-size:13" />
                       </FormattedString>
                     </Label>
                     <Label textWrap="true">
                       <FormattedString>
-                        <Span text="Localización: " style="font-size:18; color:#024dbe " />
+                        <Span text="Localización: " style="font-size:18;" class="fa" />
                         <Span :text="item.LOCALIZACION" style="color:#8a8a8a; font-size:13" />
                       </FormattedString>
                     </Label>
                     <Label textWrap="true">
                       <FormattedString>
-                        <Span text="Cantidad: " style="font-size:18; color:#024dbe " />
+                        <Span text="Cantidad: " style="font-size:18;" class="fa" />
                         <Span :text="item.CANTIDAD" style="color:#8a8a8a; font-size:13" />
                       </FormattedString>
                     </Label>
@@ -84,23 +84,23 @@
         <TabViewItem title="Nueva Linea">
           <ScrollView orientation="vertical" width="99%" height="99%">
             <StackLayout orientation="vertical">
-              <Label text="Centro de Costo: " fontSize="20" color="#3A53FF" />
+              <Label text="Centro de Costo: " fontSize="20" class="fa" />
               <StackLayout orientation="horizontal" width="*" height="40">
                 <TextField :text="selectedCostCenter.value" textWrap="true" width="60%" editable="false" />
                 <Button text="Seleccionar" @tap="selectCostCenter" width="40%" id="ccbtn" />
               </StackLayout>
-              <Label text="Bodega: " fontSize="20" color="#3A53FF" />
+              <Label text="Bodega: " fontSize="20" class="fa" />
               <StackLayout orientation="horizontal" width="*" height="40">
                 <TextField :text="selectedStorage.BODEGA" textWrap="true" width="60%" editable="false" />
                 <Button text="Seleccionar" @tap="selectStorage" width="40%" />
               </StackLayout>
-              <Label text="Localización: " fontSize="20" color="#3A53FF" />
+              <Label text="Localización: " fontSize="20" class="fa" />
               <StackLayout orientation="horizontal" width="*" height="40">
                 <TextField :text="selectedLocation.LOCALIZACION" textWrap="true" width="60%" editable="false" />
                 <Button text="Seleccionar" @tap="selectLocation" width="40%" />
               </StackLayout>
               <StackLayout orientation="horizontal" width="*" height="40">
-                <Label text="Habilitar Cantidades: " fontSize="20" color="#3A53FF" />
+                <Label text="Habilitar Cantidades: " fontSize="20" class="fa" />
                 <Switch v-model="enableQuantity" @checkedChange="onCheckedChange" />
               </StackLayout>
               <TextField v-model="quantity" hint="Cantidad" @textChange="" @returnPress="" keyboardType="number" :editable="enableQuantity"/>
@@ -374,6 +374,14 @@
   // Custom styles
   .fa {
       color: $accent-dark;
+  }
+
+  .accent-bg {
+    background: $accent-dark;
+  }
+
+  .scc-yellow {
+    color: $scc-yellow;
   }
 
   .info {
