@@ -52,7 +52,7 @@
       loadOff() { this.busy = false },
       fillStockLote() {
         this.loadOn()
-        axios.get(this.api+'stocck/lote', {
+        axios.get(this.api+'stock/lote', {
           params: {articulo: this.item.ARTICULO}
         }).then(res => {
           this.stockLote = res.data
