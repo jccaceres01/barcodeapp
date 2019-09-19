@@ -1,14 +1,20 @@
 <template>
-  <Page class="page">
-    <ActionBar class="action-bar" title="Consulta">
+  <Page>
+    <ActionBar title="Consultas Fuera de Linea" class="action-bar">
       <NavigationButton text="Atras" android.systemIcon="ic_menu_back" @tap="$navigateBack" />
     </ActionBar>
 
     <StackLayout orientation="vertical">
-      <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
-      <SearchBar hint="Usar Código, Número de parte" v-model="criteria" @textChange="" @submit="searchItems" />
-      <!-- <Button text="Limpiar Resultados" @tap="clear()" v-show="hasItems" /> -->
-      <ListView for="item in items" @itemTap="" height="100%">
+      <ActivityIndicator busy="true" @busyChange="" v-show="busy" />
+      <Label verticalAlignment="center" horizontalAlignment="center" fontSize="20" class="p-t-10" v-show="busy">
+        <FormattedString>
+          <Span class="fas" text.decode="&#xf12a;"/>
+          <Span text=" " fontSize="20" />
+          <Span :text="status" fontSize="20" />
+        </FormattedString>
+      </Label>
+      <SearchBar hint="Buscar Repuestos" v-model="criteria" @textChange="" @submit="findItem" />
+      <ListView for="item in results" @itemTap="" height="100%">
         <v-template>
           <StackLayout orientation="vertical">
             <FlexboxLayout flexDirection="row" class="p-l-2">
@@ -17,20 +23,20 @@
               <StackLayout orientation="vertical" width="98%" class="p-l-4">
                 <Label textWrap="true" class="p-b-10">
                   <FormattedString>
-                    <Span :text="item.ARTICULO" style="color: #1b1b1b" fontSize="25" />
+                    <Span :text="item.articulo" style="color: #1b1b1b" fontSize="25" />
                     <Span text="(" fontSize="18" />
-                    <Span :text="item.DESCRIPCION" fontSize="18" />
+                    <Span :text="item.descripcion" fontSize="18" />
                     <Span text=")" fontSize="18" />
                   </FormattedString>
                 </Label>
                 <FlexboxLayout flexDirection="row">
                   <StackLayout orientation="verticla" width="50%">
                     <Label text="Bodega: " fontSize="14" style="color: #1b1b1b; font-weight: bold" />
-                    <Label :text="item.BODEGA" textWrap="true" fontSize="10" />
+                    <Label :text="item.bodega" textWrap="true" fontSize="10" />
                     <Label text="Cant. Disponible: " fontSize="14" style="color: #1b1b1b; font-weight: bold" />
-                    <Label :text="item.CANT_DISPONIBLE" textWrap="true" fontSize="10" />
+                    <Label :text="item.cant_disponible" textWrap="true" fontSize="10" />
                     <Label text="Original: " fontSize="14" style="color: #1b1b1b; font-weight: bold" />
-                    <Label v-if="(item.CLASIFICACION_2 == '02-01')">
+                    <Label v-if="(item.clasificacion_2 == '02-01')">
                       <FormattedString>
                         <Span class="fas" text.decode="&#xf058;"/>
                       </FormattedString>
@@ -43,9 +49,9 @@
                   </StackLayout>
                   <StackLayout orientation="verticla" width="50%">
                     <Label text="Localización: " fontSize="14" style="color: #1b1b1b; font-weight: bold" />
-                    <Label :text="item.LOCALIZACION" textWrap="true" fontSize="10" />
+                    <Label :text="item.localizacion" textWrap="true" fontSize="10" />
                     <Label text="Cant. Reservada: " fontSize="14" style="color: #1b1b1b; font-weight: bold" />
-                    <Label :text="item.CANT_RESERVADA" textWrap="true" fontSize="10" />
+                    <Label :text="item.cant_reservada" textWrap="true" fontSize="10" />
                   </StackLayout>
                 </FlexboxLayout>
               </StackLayout>
@@ -58,68 +64,80 @@
 </template>
 
 <script>
-  import conf from '../../customconfig.json'
   import axios from 'axios'
+  import Sqlite from 'nativescript-sqlite'
+  import Configuration from '../../customconfig.json'
 
   export default {
     data() {
       return {
-        api: conf.api,
         busy: false,
+        status: '',
         criteria: '',
-        items: []
+        results: []
       }
+    },
+    mounted() {
+
+    },
+    computed: {
     },
     methods: {
       loadOn() { this.busy = true },
       loadOff() { this.busy = false },
-      clear() {
-        this.items = []
-        this.criteria = ''
-        this.loadOff()
-      },
-      searchItems() {
-        this.loadOn()
-        axios.get(this.api+'search/articuloscodigo', {
-          params: {
-            criteria: this.criteria
-          }
-        }).then(res => {
-          if (res.data.length > 0) {
-            this.items = res.data
-          } else {
-            alert('No se encontraron respuestos')
-          }
+      findItem() {
+        if (Sqlite.exists('local')) {
+
+          var promise = new Sqlite('local', er => {
+            if (er) { alert(er) }
+          })
+
+          this.loadOn()
+          this.status = 'Consultando repuesto'
+
+          promise.then(db => {
+            db.resultType(Sqlite.RESULTSASOBJECT)
+
+            db.all('select * from existencia_lote where articulo like ? or descripcion like ?', ['%'+this.criteria+'%', '%'+this.criteria+'%'], (er, res) => {
+              if (!er) {
+                this.results = res
+              } else { alert(er) }
+            })
+          })
+
+          this.status = ''
           this.loadOff()
-        }).catch(er => {
-          alert(er)
-          this.clear()
-        })
-      }
-    },
-    computed: {
-      hasItems() {
-        return (this.items.length > 0)
+        } else { alert('No existe la base de datos local') }
       }
     }
   }
+
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss" scoped >
   // Start custom common variables
   @import '../../app-variables';
   // End custom common variables
 
   // Custom styles
   .fa {
-      color: $accent-dark;
+    color: $accent-dark;
+  }
+
+  .fas {
+    color: $accent-dark;
   }
 
   .info {
-      font-size: 20;
+    font-size: 20;
   }
 
-  .t-uppercase {
-    text-transform: uppercase;
+  .mediumicon {
+    font-size: 30;
   }
+
+  .bigicon {
+    font-size: 100;
+  }
+
 </style>

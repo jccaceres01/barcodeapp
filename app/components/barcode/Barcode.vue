@@ -9,12 +9,55 @@
     </ActionBar>
 
     <StackLayout orientation="vertical">
-      <ActivityIndicator :busy="busy" @busyChange="" width="30" height="30" />
+      <ActivityIndicator :busy="busy" @busyChange="" width="30" height="30" v-show="busy" />
       <SearchBar hint="Buscar Repuesto" v-model="searchCriteria" @textChange="" @submit="fintItems" v-show="!hasItemSelected" width="*" height="50" />
-      <ScrollView orientation="vertical" height="250" v-show="hasItems">
-      </ScrollView>
+      <!-- Result List -->
+      <ListView for="(item, index) in resultList" @itemTap="" height="100%"  v-show="(resultList.length > 0)">
+        <v-template>
+          <StackLayout orientation="vertical">
+            <FlexboxLayout flexDirection="row" class="p-l-2">
+              <!-- Black Bar -->
+              <StackLayout backgroundColor="#1c1c1c" width="2%"></StackLayout>
+              <StackLayout orientation="vertical" width="98%" class="p-l-4">
+                <Label textWrap="true" class="p-b-10">
+                  <FormattedString>
+                    <Span :text="item.ARTICULO" style="color: #1b1b1b" fontSize="25" />
+                    <Span text="(" fontSize="18" />
+                    <Span :text="item.DESCRIPCION" fontSize="18" />
+                    <Span text=")" fontSize="18" />
+                  </FormattedString>
+                </Label>
+                <FlexboxLayout flexDirection="row">
+                  <StackLayout orientation="verticla" width="50%">
+                    <Label text="Cod. Barras Venta: " fontSize="14" style="color: #1b1b1b; font-weight: bold" />
+                    <Label :text="item.CODIGO_BARRAS_VENT" textWrap="true" fontSize="10" />
+                    <Label text="Original: " fontSize="14" style="color: #1b1b1b; font-weight: bold" />
+                    <Label v-if="(item.CLASIFICACION_2 == '02-01')">
+                      <FormattedString>
+                        <Span class="fas" text.decode="&#xf058;"/>
+                      </FormattedString>
+                    </Label>
+                    <Label v-else>
+                      <FormattedString>
+                        <Span class="fas" text.decode="&#xf057;"/>
+                      </FormattedString>
+                    </Label>
+                  </StackLayout>
+                  <StackLayout orientation="verticla" width="50%">
+                    <Label text="Cod Barras Inventario: " fontSize="14" style="color: #1b1b1b; font-weight: bold" />
+                    <Label :text="item.CODIGO_BARRAS_INVT" textWrap="true" fontSize="10" />
+                    <Button text="Escanear Código" @tap="readBarcode(item, index)" textWrap="true" class="p-r-5" />
+                  </StackLayout>
+                </FlexboxLayout>
+              </StackLayout>
+            </FlexboxLayout>
+          </StackLayout>
+        </v-template>
+      </ListView>
+
+      <!-- Item selected -->
       <StackLayout orientation="vartical" v-show="hasItemSelected">
-        <Label>
+        <Label textWrap="true" varticalAlignment="center" horizontalAlignment="center" fontSize="14">
           <Span text="Repuesto: " class="fa" />
           <Span :text="itemSelected.DESCRIPCION" class="desc" />
         </Label>
@@ -39,13 +82,16 @@
 
 <script>
   import axios from 'axios'
-  import BarcodeItemSelect from './BarcodeItemSelect'
   import conf from '../../customconfig.json'
+  import PickBarcodeComponent from '../syncOffline/dialogs/PickBarcodeComponent'
 
   export default {
     computed: {
       hasItemSelected() {
         return (this.itemSelected.articulo != '')
+      },
+      hasResults() {
+        return (this.resultList.length > 0)
       }
     },
     created() {
@@ -53,10 +99,11 @@
     data() {
       return {
         api: conf.api,
-        itemSelect: BarcodeItemSelect,
         busy: false,
         searchCriteria: '',
+        resultList: [],
         barcode_input: '',
+        pickBarcodeComponent: PickBarcodeComponent,
         itemSelected: {
           articulo: '',
           descripcion: '',
@@ -66,12 +113,8 @@
       }
     },
     methods: {
-      loadOn() {
-        this.busy = true
-      },
-      loadOff() {
-        this.busy = false
-      },
+      loadOn() { this.busy = true },
+      loadOff() { this.busy = false },
       clearAll() {
         this.loadOff()
         this.barcode_input = ''
@@ -81,55 +124,50 @@
           codigo_barras_vent: '',
           codigo_barras_invt: ''
         }
+
         this.searchCriteria = ''
       },
       fintItems() {
-        if (this.searchCriteria.trim() != ''){
-          this.$showModal(this.itemSelect, {fullscreen: true, props: {criteria: this.searchCriteria}}).then(res => {
-            if (res != null) {
-              this.itemSelected = res
-            } else {
-              this.searchCriteria = ''
-            }
-          }).catch(er => {
-            alert(er)
-              .then(() => {
-              });
-          })
-        } else {
-          alert('Rellene el campo de busqueda')
-            .then(() => {
-
-            });
-        }
-      },
-      placeBarcode() {
-        if (this.barcode_input.trim() != '') {
+        if (this.searchCriteria.trim() != '') {
           this.loadOn()
-          axios.put(this.api+'articulos/'+this.itemSelected.ARTICULO, {
-              CODIGO_BARRAS_INVT: this.barcode_input,
-              CODIGO_BARRAS_VENT: this.barcode_input
-          }).then(res => {
-            alert('Código de Barras Asignado')
-              .then(() => {
-                this.clearAll()
-              });
-          }).catch(er => {
+          axios.get(this.api+'search/articulos', {
+            params: {
+              criteria: this.searchCriteria
+            }
+          }).then( res => {
+            this.resultList = res.data
+            this.loadOff()
+          }).catch( er => {
             alert(er)
-              .then(() => {
-                this.clearAll()
-              });
+            this.loadOff()
           })
         } else {
-          alert('No puede dejar el codigo de barras vacio')
-            .then(() => {
-            });
+          alert('Ingrese un valor en el campo de busqueda')
         }
       },
-      clearField() {
-        this.barcode_input = ''
+      readBarcode(item, index) {
+        this.$showModal(this.pickBarcodeComponent).then( res => {
+          if (res.trim() !== '') {
+            item.CODIGO_BARRAS_VENT = res
+            item.CODIGO_BARRAS_INVT = res
+
+            this.loadOn()
+            axios.put(this.api+'articulos/'+item.ARTICULO, {
+              'CODIGO_BARRAS_VENT': item.CODIGO_BARRAS_VENT,
+              'CODIGO_BARRAS_INVT': item.CODIGO_BARRAS_INVT
+            }).then( axiosRes => {
+              alert('Código de Barras Agregado')
+              this.loadOff()
+            }).catch( er => {
+              alert(er)
+              this.loadOff()
+            })
+          } else {
+            alert('No se escaneo ningun código')
+          }
+        })
       }
-    }
+    },
   }
 </script>
 

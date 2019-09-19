@@ -8,16 +8,15 @@
               android.position="popup" />
         </ActionBar>
 
-        <StackLayout orientation="horizontal">
+        <StackLayout orientation="horizontal" padding="0">
           <ListView class="list-group" for="item in listItems"
-            @itemTap="pickMenu" style="height:1250px">
+            @itemTap="pickMenu" with="auto" height="99%">
             <v-template>
               <FlexboxLayout flexDirection="row" class="list-group-item">
                 <Label fontSize="20" style="width: 20%">
                   <Span class="fas mediumicon" :text="item.icon" :class="{'offline': !item.online}" />
                 </Label>
-                <Label :text="item.name" class=" fas list-group-item-heading"
-                    style="width: 80%" />
+                <Label :text="item.name" class=" fas list-group-item-heading" style="width: 80%" textWrap="true" />
               </FlexboxLayout>
             </v-template>
           </ListView>
@@ -34,6 +33,9 @@
   import ConfigView from './ConfigView'
   import SyncHomeComponent from './syncOffline/SyncHomeComponent'
   import SyncItemsComponent from './syncOffline/SyncItemsComponent'
+  import SyncExistsComponent from './syncOffline/SyncExistsComponent'
+  import SyncSearchComponent from './syncOffline/SyncSearchComponent'
+  import SyncInventoryTicketComponent from './syncOffline/SyncInventoryTicketComponent'
 
   export default {
     computed: {
@@ -47,7 +49,10 @@
         search: Search,
         inventory: InventoryTicket,
         sync: SyncHomeComponent,
-        syncItems: SyncItemsComponent,
+        syncItems: SyncItemsComponent, // Items offline sync home
+        exists: SyncExistsComponent, // outputs offline sync home
+        searchOff: SyncSearchComponent, // Search offline sync home
+        inventoryTicketOff: SyncInventoryTicketComponent, // Inventory ticket offline sync home
         listItems: [
           {id: 'codbarras', name: 'Escanear Códigos', icon: '\uf02a', online: true },
           {id: 'codbarrasoff', name: 'Escanear Códigos Sin Conexión', icon: '\uf02a', online: false },
@@ -57,7 +62,7 @@
           {id: 'consultaroff', name: 'Consultar Repuestos Sin Conexión', icon: '\uf002', online: false },
           {id: 'boletainv', name: 'Boletas de Inventario', icon: '\uf46c', online: true },
           {id: 'boletainvoff', name: 'Boletas de Inventario Sin Conexión', icon: '\uf46c', online: false },
-          {id: 'sync', name: 'Sincronización Sin Conexión', icon: '\uf2f1', online: true }
+          {id: 'sync', name: 'Sincronización', icon: '\uf2f1', online: true }
         ]
       }
     },
@@ -70,11 +75,20 @@
           case 'salidas':
             this.$navigateTo(this.outputs)
             break;
+          case 'salidasoff':
+            this.$navigateTo(this.exists)
+            break;
           case 'consultar':
             this.$navigateTo(this.search)
             break;
+          case 'consultaroff':
+            this.$navigateTo(this.searchOff)
+            break;
           case 'boletainv':
             this.$navigateTo(this.inventory)
+            break;
+          case 'boletainvoff':
+            this.$navigateTo(this.inventoryTicketOff)
             break;
           case 'sync':
             this.$navigateTo(this.sync)
@@ -96,10 +110,6 @@
 
     // Custom styles
     .fa {
-        color: $accent-dark;
-    }
-
-    .fas {
         color: $accent-dark;
     }
 

@@ -1,8 +1,8 @@
 import Vue from "nativescript-vue";
 
 import Home from "./components/Home";
-import SyncHomeComponent from './components/syncOffline/SyncHomeComponent';
-import SyncItemsComponent from './components/syncOffline/SyncItemsComponent';
+import SyncInventoryTicketComponent from './components/syncOffline/SyncInventoryTicketComponent'
+import SyncNewInventoryTicketComponent from './components/syncOffline/SyncNewInventoryTicketComponent'
 
 new Vue({
 
@@ -13,7 +13,7 @@ new Vue({
 
     components: {
         Home,
-        SyncHomeComponent,
-        SyncItemsComponent
+        SyncInventoryTicketComponent,
+        SyncNewInventoryTicketComponent,
     }
 }).$start();

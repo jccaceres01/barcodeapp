@@ -8,7 +8,7 @@
       <TabView :selectedIndex="tabSelectedIndex" @selectedIndexChange="changeIndex">
         <!-- Output Detail -->
         <TabViewItem title="Detalle">
-          <StackLayout orientation="vertical">
+          <StackLayout orientation="vertical" padding="10">
             <Label textWrap="true">
               <FormattedString>
                 <Span class="fa" text.decode="&#xf111; "/>
@@ -41,7 +41,7 @@
         </TabViewItem>
         <!-- Lines Tab -->
         <TabViewItem title="Lineas">
-          <GridLayout>
+          <GridLayout padding="10">
             <ListView for="item, in lines" @itemTap="">
               <v-template>
                 <GridLayout columns="auto, *, auto" rows="auto, auto">
@@ -83,23 +83,26 @@
         <!-- New Line Tab -->
         <TabViewItem title="Nueva Linea">
           <ScrollView orientation="vertical" width="99%" height="99%">
-            <StackLayout orientation="vertical">
-              <Label text="Centro de Costo: " fontSize="20" class="fa" />
-              <StackLayout orientation="horizontal" width="*" height="40">
-                <TextField :text="selectedCostCenter.value" textWrap="true" width="60%" editable="false" />
-                <Button text="Seleccionar" @tap="selectCostCenter" width="40%" id="ccbtn" />
+            <StackLayout orientation="vertical" padding="10">
+              <StackLayout orientation="horizontal" width="*" height="50">
+                <TextField :text="selectedCostCenter.value" hint="Centro de Costo" textWrap="true" width="80%" editable="false" />
+                <Button @tap="selectCostCenter" width="20%" id="ccbtn">
+                  <Span class="fa" text.decode="&#xf13a; "/>
+                </Button>
               </StackLayout>
-              <Label text="Bodega: " fontSize="20" class="fa" />
-              <StackLayout orientation="horizontal" width="*" height="40">
-                <TextField :text="selectedStorage.BODEGA" textWrap="true" width="60%" editable="false" />
-                <Button text="Seleccionar" @tap="selectStorage" width="40%" />
+              <StackLayout orientation="horizontal" width="*" height="50">
+                <TextField :text="selectedStorage.BODEGA" hint="Bodega" textWrap="true" width="80%" editable="false" />
+                <Button @tap="selectStorage" width="20%">
+                  <Span class="fas" text.decode="&#xf13a;"/>
+                </Button>
               </StackLayout>
-              <Label text="Localización: " fontSize="20" class="fa" />
-              <StackLayout orientation="horizontal" width="*" height="40">
-                <TextField :text="selectedLocation.LOCALIZACION" textWrap="true" width="60%" editable="false" />
-                <Button text="Seleccionar" @tap="selectLocation" width="40%" />
+              <StackLayout orientation="horizontal" width="*" height="50">
+                <TextField :text="selectedLocation.LOCALIZACION" hint="Localización" textWrap="true" width="80%" editable="false" />
+                <Button @tap="selectLocation" width="20%">
+                  <Span class="fas" text.decode="&#xf13a;"/>
+                </Button>
               </StackLayout>
-              <StackLayout orientation="horizontal" width="*" height="40">
+              <StackLayout orientation="horizontal" width="*" height="50">
                 <Label text="Habilitar Cantidades: " fontSize="20" class="fa" />
                 <Switch v-model="enableQuantity" @checkedChange="onCheckedChange" />
               </StackLayout>
@@ -149,7 +152,6 @@
     },
     created() {
       this.fillWarehouses()
-      // document.getElementById('ccbtn').focus()
     },
     methods: {
       loadOn() { this.busy = true },

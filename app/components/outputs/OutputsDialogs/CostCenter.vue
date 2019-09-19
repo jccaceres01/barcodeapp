@@ -1,10 +1,17 @@
 <template>
   <Page>
     <StackLayout>
-      <Label text="Centro de Costo" fontSize="30" />
-      <ListView for="item in costCenters" @itemTap="returnValue" width="*" height="100%">
+      <Label text="Centro de Costo" fontSize="20" textWrap="true" verticalAlignment="center" horizontalAlignment="center" padding="10" />
+      <ListView for="item in costCenters" @itemTap="returnValue" width="99%" height="99%">
         <v-template>
-          <Label :text="item.value" fonSize="20" />
+          <StackLayout orientation="vertical" width="100%" height="100%">
+            <Label text="" textWrap="true">
+              <FormattedString>
+                <Span class="fas" text.decode="&#xf013;"/>
+                <Span :text="item.value" fontSize="18" />
+              </FormattedString>
+            </Label>
+          </StackLayout>
         </v-template>
       </ListView>
     </StackLayout>
@@ -40,4 +47,5 @@
 </script>
 
 <style lang="scss" scoped>
+
 </style>

@@ -32,7 +32,7 @@
       addNewOutput() {
         if (this.ni.trim() != '') {
           this.loadOn()
-          axios.post(this.api+'outputs', {REFERENCIA: this.ni}).then( res => {
+          axios.post(this.api+'outputs', { REFERENCIA: this.ni}).then( res => {
             alert('Salida Creada')
               .then(() => {
                 this.$navigateBack()

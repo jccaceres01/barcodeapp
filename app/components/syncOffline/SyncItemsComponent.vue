@@ -45,37 +45,34 @@
       <TextField v-model="criteria" hint="Filtrar Escaneados" @textChange="" @returnPress="" keyboardType="Text" class="p-10" v-show="(this.scanned.length > 0)" />
       <ListView for="(item, index) in filtered" @itemTap="onItemTap" v-show="!ifItemSeleceted" v-if="this.scanned.length > 0">
         <v-template>
-          <FlexboxLayout backgroundColor="black" flexDirection="row" height="20%" class="p-10">
-            <Label width="25%" horizontalAlignment="center" verticalAlignment="center">
-              <Span text.decode="&#xf013;" class="fas thumb p-16" fontSize="60" style="color: #ffffff" />
-            </label>
-            <StackLayout width="55%">
-                <Label>
+          <FlexboxLayout backgroundColor="black" flexDirection="row" class="p-10">
+            <StackLayout width="80%">
+                <Label textWrap="true">
                   <FormattedString>
                     <Span class="fas" text.decode="&#xf192;" style="color: #ffffff" />
                     <Span text="Código Softland: " class="fas" style="color: #ffffff" />
-                    <Span :text="item.articulo" style="color: #ffffff" />
+                    <Span :text="item.articulo" style="color: #ffffff" textWrap="true" />
                   </FormattedString>
                 </Label>
-                <Label>
+                <Label textWrap="true">
                   <FormattedString>
                     <Span class="fas" text.decode="&#xf192;" style="color: #ffffff" />
                     <Span text="Descripción: " class="fas" style="color: #ffffff" />
                     <Span text.decode="&#xa;" />
-                    <Span :text="item.descripcion" style="color: #ffffff" />
+                    <Span :text="item.descripcion" style="color: #ffffff" textWrap="true" />
                   </FormattedString>
                 </Label>
-                <Label>
+                <Label textWrap="true">
                   <FormattedString>
                     <Span class="fas" text.decode="&#xf192;" style="color: #ffffff" />
                     <Span text="Cod. De Barras: " class="fas" style="color: #ffffff" />
                     <Span text.decode="&#xa;" />
-                    <Span :text="item.codigo_barras_invt" style="color: #ffffff" />
+                    <Span :text="item.codigo_barras_invt" style="color: #ffffff" textWrap="true" />
                   </FormattedString>
                 </Label>
             </StackLayout>
             <Button @tap="removeItem(item, index)" width="20%">
-              <Span class="fa" text.decode="&#xf1f8;"/>
+              <Span class="fas" text.decode="&#xf1f8;" style="color: #ffffff"/>
             </Button>
           </FlexboxLayout>
         </v-template>
@@ -181,7 +178,7 @@
         try {
           for (var i = 0; i < this.scanned.length; i++) {
             this.status = 'Subiendo escaneado: '+i+ ' de '+this.scanned.length
-            let op = await axios.patch(this.api+'articulos/'+this.scanned[i].articulo, {
+            let op = await axios.put(this.api+'articulos/'+this.scanned[i].articulo, {
               'CODIGO_BARRAS_VENT': this.scanned[i].codigo_barras_vent,
               'CODIGO_BARRAS_INVT': this.scanned[i].codigo_barras_invt
             })

@@ -30,7 +30,7 @@
 
   // Custom styles
   .fas {
-      color: $accent-dark;
+    color: $accent-dark;
   }
 
   .desc {

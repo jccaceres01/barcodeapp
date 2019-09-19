@@ -7,22 +7,22 @@
     <StackLayout orientation="vertical" rows="20, *" >
       <Button text="Crear Base de datos local" @tap="createDb" :isEnabled="!busy" />
       <Button text="Borrar Base de datos local" @tap="dropDatabase" :isEnabled="!busy" />
+      <Button text="Sincronizar Bodegas" @tap="syncWarehouses" :isEnabled="!busy" />
+      <Button text="Sincronizar Localizaciones" @tap="syncLocations" :isEnabled="!busy" />
       <Button text="Sincronizar Repuestos" @tap="syncItems" :isEnabled="!busy" />
       <Button text="Sincronizar Existencias" @tap="syncExists" :isEnabled="!busy" />
-      <Button text="View Data" @tap="viewData" />
 
       <ActivityIndicator :busy="busy" @busyChange="busyChangeAction" v-show="busy" />
       <Progress :value="progress" maxValue="this.paginator.last_page" @valueChange="onValueChanged" v-show="busy" />
       <Label :text="status" class="fas" fontSize="14" verticalAlignment="center" horizontalAlignment="center" v-show="busy" />
-      <ListView for="item in dbValues" @itemTap="onItemTap">
+      <!-- Test items -->
+      <!-- <TextField v-model="criteria" hint="Filtrar" @textChange="" @returnPress="" keyboardType="Text"/>
+      <ListView for="item in filtered" @itemTap="onItemTap">
         <v-template>
-          <!-- Shows the list item label in the default color and style. -->
-          <Label>
-            <Span :text="item.articulo" style="color: red" />
-            <Span :text="item.cant_disponible" style="color: purple" />
-          </Label>
+          <StackLayout orientation="vertical">
+          </StackLayout>
         </v-template>
-      </ListView>
+      </ListView> -->
     </StackLayout>
   </Page>
 </template>
@@ -40,39 +40,23 @@
         api: conf.api,
         status: '',
         progress: 0,
-        itemsPaginator: null,
-        existsPaginator: null,
-        dbValues: []
+        // testList: [],
+        // criteria: ''
       }
     },
     mounted() {
-      this.getPaginators()
+
+    },
+    computed: {
+      filtered() {
+        return this.testList.filter(cb => {
+          return (cb.ARTICULO.toLowerCase().trim().indexOf(this.criteria.toLowerCase().trim()) !== -1)
+        })
+      }
     },
     methods: {
       loadOn() { this.busy = true },
       loadOff() { this.busy = false },
-      getPaginators() {
-        this.itemsPaginator = null
-        this.existsPaginator = null
-        this.getItemsPaginator()
-        this.getExistsPaginator()
-      },
-      getItemsPaginator() {
-        this.loadOn()
-        // Get paginator
-        axios.get(this.api+ 'articulos').then(res => {
-          this.itemsPaginator = res.data
-        }).catch(er => { alert(er) })
-        this.loadOff()
-      },
-      getExistsPaginator() {
-        this.loadOn()
-        // Get paginator
-        axios.get(this.api+ 'lote').then(res => {
-          this.existsPaginator = res.data
-        }).catch(er => { alert(er) })
-        this.loadOff()
-      },
       dropDatabase() {
         confirm('Desea Borrar la DB Local?')
           .then(result => {
@@ -89,7 +73,6 @@
       },
       createDb() {
         this.loadOn()
-        this.getPaginators() // Get the existing paginators
 
         if (!Sqlite.exists('local')) {
           this.status = 'Creando base de datos'
@@ -104,7 +87,7 @@
                     } else { alert(er) }
                   })
                   // Create table exists
-                  db.execSQL('create table if not exists existencia_lote (bodega varchar, articulo varchar, localizacion varchar, cant_disponible integer, cant_reservada integer)', (er) => {
+                  db.execSQL('create table if not exists existencia_lote (bodega varchar, articulo varchar, descripcion varchar, localizacion varchar, clasificacion_2 varchar, cant_disponible integer, cant_reservada integer)', (er) => {
                     if (!er) {
                       this.status = 'Tabla existencias creada'
                     } else { alert(er) }
@@ -113,6 +96,36 @@
                   db.execSQL('create table if not exists escaneados (articulo varchar, descripcion varchar, codigo_barras_vent varchar, codigo_barras_invt varchar)', er => {
                     if (!er) {
                       this.status = 'Tabla escaneados creada'
+                    } else { alert(er) }
+                  })
+                  // Create table outputs
+                  db.execSQL('create table if not exists salidas (id integer primary key autoincrement, referencia varchar, centro_costo varchar)', er => {
+                    if (!er) {
+                      this.status = 'Tabla salidas creada'
+                    } else { alert(er) }
+                  })
+                  // Create table output lines
+                  db.execSQL('create table if not exists lineas_salida (id integer not null primary key autoincrement, salida_id integer, articulo varchar, bodega varchar, localizacion varchar, cantidad float, centro_costo varchar, foreign key(salida_id) references salidas(id))', er => {
+                    if (!er) {
+                      this.status = 'Tabla lineas_salida creada'
+                    } else { alert(er) }
+                  })
+                  // Create table inventory
+                  db.execSQL('create table if not exists boletas (id integer primary key autoincrement, articulo varchar, descripcion varchar, bodega varchar, localizacion varchar, cantidad float, fecha_descong date)', er => {
+                    if (!er) {
+                      this.status = 'Tabla boletas creada'
+                    } else { alert(er) }
+                  })
+                  // Create table warehouses
+                  db.execSQL('create table if not exists bodegas (bodega varchar, nombre varchar)', er => {
+                    if (!er) {
+                      this.status = 'Tabla bodegas creada'
+                    } else { alert(er) }
+                  })
+                  // Create table locations
+                  db.execSQL('create table if not exists localizaciones (bodega varchar, localizacion varchar, descripcion varchar)', er => {
+                    if (!er) {
+                      this.status = 'Tabla localizaciones creada'
                     } else { alert(er) }
                   })
                   // Set db version to 1
@@ -131,119 +144,152 @@
       // Sync items
       async syncItems() {
         this.loadOn()
-        // Open db connection
-        this.status = 'Abriendo conexión de db local'
-        var db_promise = new Sqlite('local', (er, db) => {
-          if (er) { alert(er) } else { console.log('DB open') }
-        })
+        this.status = 'Descargando datos del servidor...'
 
-        // Drop data first
         if (Sqlite.exists('local')) {
-         db_promise.then( db => {
-           db.execSQL('delete from articulo', (er) => {
-             if (er) { alert(er) }
-           })
-         })
-       }
+          axios.get(this.api+'articulos').then( res => {
 
-        this.status = 'Descargando repuestos del servidor...'
+            this.status = 'Insertando datos en la base de datos local...'
+            // Open db local
+            var promise = new Sqlite('local', er => {
+              if (er) { alert(er) }
+            })
 
-        //  Get data from server's api and store it in operations array for async axios
-        try {
+            // Clear table articulos
+            promise.then(db => {
+              db.execSQL('delete from articulo', er => {
+                if (er) { alert(er) }
+              })
+            })
 
-          let ops = []
-          for (var i = this.itemsPaginator.current_page; i <= this.itemsPaginator.last_page; i++) {
-            this.status = 'Descargando bloque '+ i +'/'+ this.itemsPaginator.last_page +  ' de datos.'
-            let op = await axios.get(this.api+'articulos', {params: {page: i}})
-            ops.push(op)
-          }
-
-          this.status = 'Insertando datos en la base de datos local'
-          let dtReturned = await axios.all(ops)
-
-          dtReturned.forEach(cb => {
-            cb.data.data.forEach(cb2 => {
-              db_promise.then(db => {
-                db.execSQL('insert into articulo (articulo, descripcion, clasificacion_2, codigo_barras_vent, codigo_barras_invt) values (?, ?, ?, ?, ?)', [cb2.ARTICULO, cb2.DESCRIPCION, cb2.CLASIFICACION_2, cb2.CODIGO_BARRAS_VENT, cb2.CODIGO_BARRAS_INVT], er => {
+            res.data.forEach(cb => {
+              promise.then(db => {
+                db.execSQL('insert into articulo (articulo, descripcion, clasificacion_2, codigo_barras_vent, codigo_barras_invt) values (?, ?, ?, ?, ?)', [cb.ARTICULO, cb.DESCRIPCION, cb.CLASIFICACION_2, cb.CODIGO_BARRAS_VENT, cb.CODIGO_BARRAS_INVT], er => {
                   if (er) { alert(er) }
                 })
               })
             })
-          })
-        } catch (e) {
-          alert(e)
-        }
-        db_promise.then(db => { db.close() })
-        this.loadOff()
+
+            // Close db connection
+            promise.then(db => {
+              db.close()
+            })
+
+            this.loadOff()
+            this.status = ''
+          }).catch(er => { alert(er) })
+        } else { alert('No existe la db local') }
       },
       // Sync Exists
       async syncExists() {
-        this.loadOn() // show activity indicator
-        let ops = [] // array to store request for axios all
+        this.loadOn()
+        this.status = 'Obteniendo datos del servidor'
+        var dDt = []
 
-        if (Sqlite.exists('local')) {
-          //  Check Local database
-          this.status = 'Abriendo base de datos local'
-          let db_promise = new Sqlite('local', (er, db) => {
-            if(!er) {
-              console.log('db open!')
-            } else { alert(er) }
-          })
+        axios.get(this.api+'lote').then(res => {
 
-          // Delete data from table
-          this.status = 'Restableciendo la tabla'
-          db_promise.then(db => {
-            db.execSQL('delete from existencia_lote', er => {
+          this.status = 'Sincronizando datos en la base de datos local...'
+          if (Sqlite.exists('local')) {
+            var promise = new Sqlite('local', (er) => {
               if (er) { alert(er) }
             })
-          })
 
-          // Get data from serve
-          try {
+            // Drop table existencia lote before insert data
+            promise.then(db => {
+              db.execSQL('delete from existencia_lote')
+            })
 
-            for (var i = 1; i <= this.existsPaginator.last_page; i++) {
-              this.status = 'Obteniendo bloque '+ i + '/'+ this.existsPaginator.last_page +' de datos'
-
-              let op = await axios.get(this.api+'lote', {params: {page: i}})
-              ops.push(op)
-            }
-
-            let dataReturned = await axios.all(ops)
-
-            this.status = 'Agregando datos a la base de datos local, espere...'
-            dataReturned.forEach(cb => {
-              cb.data.data.forEach(cb2 => {
-                db_promise.then( db => {
-                  db.execSQL('insert into existencia_lote (bodega, articulo, localizacion, cant_disponible, cant_reservada) values (?, ?, ?, ?, ?)', [cb2.BODEGA, cb2.ARTICULO, cb2.LOCALIZACION, cb2.CANT_DISPONIBLE, cb2.CANT_RESERVADA], er => {
-                    if (er) { alert(er) }
-                  })
+            // Loop data to insert into table
+            res.data.forEach(cb => {
+              promise.then(db => {
+                db.execSQL('insert into existencia_lote (bodega, articulo, descripcion, localizacion, clasificacion_2, cant_disponible, cant_reservada) values (?, ?, ?, ?, ?, ?, ?)', [cb.BODEGA, cb.ARTICULO, cb.DESCRIPCION, cb.LOCALIZACION, cb.CLASIFICACION_2, cb.CANT_DISPONIBLE, cb.CANT_RESERVADA], (er, id) => {
+                  if (er) { alert(er) }
                 })
               })
             })
-          } catch (e) {
-            alert(e)
           }
 
-          db_promise.then(db => { db.close() })
+          promise.then(db => { db.close()}) // Close connection before end
+
+          this.status = ''
           this.loadOff()
-
-        } else { alert('No existe la base de datos local') }
+        }).catch( er => {
+          alert(er)
+        })
       },
-      viewData() {
-        if (Sqlite.exists('local')) {
-          let db_promise = new Sqlite('local', (er) => {
-            if (er) { alert(er) }
-          })
+      // Sync Warehouses
+      syncWarehouses() {
+        this.loadOn()
+        this.status = 'Obteniendo datos del servidor'
+        var dDt = []
 
-          db_promise.then(db => {
-            db.resultType(Sqlite.RESULTSASOBJECT)
-            db.all('select * from existencia_lote', (er, res) => {
-              if (!er) {
-                this.dbValues = res
-              } else { alert(er) }
+        axios.get(this.api+'bodega').then(res => {
+
+          this.status = 'Sincronizando datos en la base de datos local...'
+          if (Sqlite.exists('local')) {
+            var promise = new Sqlite('local', (er) => {
+              if (er) { alert(er) }
             })
-          })
-        } else { alert('No existe db local') }
+
+            // Drop table existencia lote before insert data
+            promise.then(db => {
+              db.execSQL('delete from bodegas')
+            })
+
+            // Loop data to insert into table
+            res.data.forEach(cb => {
+              promise.then(db => {
+                db.execSQL('insert into bodegas (bodega, nombre) values (?, ?)', [cb.BODEGA, cb.NOMBRE], (er, id) => {
+                  if (er) { alert(er) }
+                })
+              })
+            })
+          }
+
+          promise.then(db => { db.close()}) // Close connection before end
+
+          this.status = ''
+          this.loadOff()
+        }).catch( er => {
+          alert(er)
+        })
+      },
+      // Sync Locations method
+      syncLocations() {
+        this.loadOn()
+        this.status = 'Obteniendo datos del servidor'
+        var dDt = []
+
+        axios.get(this.api+'localizacion').then(res => {
+
+          this.status = 'Sincronizando datos en la base de datos local...'
+          if (Sqlite.exists('local')) {
+            var promise = new Sqlite('local', (er) => {
+              if (er) { alert(er) }
+            })
+
+            // Drop table existencia lote before insert data
+            promise.then(db => {
+              db.execSQL('delete from localizaciones')
+            })
+
+            // Loop data to insert into table
+            res.data.forEach(cb => {
+              promise.then(db => {
+                db.execSQL('insert into localizaciones (bodega, localizacion, descripcion) values (?, ?, ?)', [cb.BODEGA, cb.LOCALIZACION, cb.DESCRIPCION], (er, id) => {
+                  if (er) { alert(er) }
+                })
+              })
+            })
+          }
+
+          promise.then(db => { db.close()}) // Close connection before end
+
+          this.status = ''
+          this.loadOff()
+        }).catch( er => {
+          alert(er)
+        })
       }
     }
   }

@@ -9,30 +9,39 @@
         ios.systemIcon="4" ios.position="right"
         android.systemIcon="ic_menu_add" />
     </ActionBar>
-    <GridLayout orientation="vertical">
-      <ActivityIndicator :busy="busy" width="40" height="40"/>
-      <ListView for="item in outputs" @itemTap="showViewOutput">
+    <StackLayout orientation="vertical">
+      <ActivityIndicator :busy="busy" v-show="busy" />
+      <SearchBar hint="Buscar Salidas" v-model="criteria" @textChange="" @submit="" v-show="(outputs.length > 0)" />
+      <Label text="No hay Salidas" v-show="!(outputs.length > 0)" fontSize="20" textWrap="true" verticalAlignment="center" horizontalAlignment="center" marginTop="10" />
+      <ListView for="(item, index) in filtered" @itemTap="showViewOutput" height="100%">
         <v-template>
-          <GridLayout columns="auto, *, auto" rows="auto, auto">
-            <Label class="accent-bg scc-yellow" verticalAlignment="center" col="0" row="0" :text="item.DOCUMENTO_INV" width="80" height="80" margin="3"/>
-            <StackLayout orientation="vertical" col="1" row="0">
-              <Label textWrap="true">
-                <FormattedString>
-                  <Span text="Referencia: " style="font-size:20;" class="fa" />
-                  <Span :text="item.REFERENCIA " style="color:#8a8a8a; font-size:15" />
-                </FormattedString>
-              </Label>
-              <Label textWrap="true">
-                <FormattedString>
-                  <Span text="Fecha: " style="font-size:20;" class="fa" />
-                  <Span :text="item.FECHA_HOR_CREACION" style="color:#8a8a8a; font-size:15" />
-                </FormattedString>
-              </Label>
-            </StackLayout>
-          </GridLayout>
+          <StackLayout orientation="vertical">
+            <FlexboxLayout flexDirection="row" class="p-l-2">
+              <!-- Black Bar -->
+              <StackLayout backgroundColor="#1c1c1c" width="2%"></StackLayout>
+              <StackLayout orientation="vertical" width="98%" class="p-l-4">
+                <Label textWrap="true" paddingBottom="2" verticalAlignment="center" horizontalAlignment="center" style="boder-bottom-style:solid; border-bottom-color: #262626; border-bottom-width:4px">
+                  <FormattedString>
+                    <Span text="Salida No.: " style="color: #404040" fontSize="24"/>
+                    <Span :text="item.DOCUMENTO_INV" style="color: #7e7e7e" fontSize="22" />
+                  </FormattedString>
+                </Label>
+                <FlexboxLayout flexDirection="row">
+                  <StackLayout orientation="vertical" width="50%">
+                    <Label text="Referencia: " style="color: #404040" fontSize="16" fontWeight="bold" />
+                    <Label :text="item.REFERENCIA" style="color: #7e7e7e" fontSize="14" textWrap="true" />
+                  </StackLayout>
+                  <StackLayout orientation="vertical" width="50%">
+                    <Label text="Fecha: " style="color: #404040" fontSize="16" fontWeight="bold"/>
+                    <Label :text="item.FECHA_HOR_CREACION" style="color: #7e7e7e" fontSize="14" textWrap="true" />
+                  </StackLayout>
+                </FlexboxLayout>
+              </StackLayout>
+            </FlexboxLayout>
+          </StackLayout>
         </v-template>
       </ListView>
-    </GridLayout>
+    </StackLayout>
   </Page>
 </template>
 
@@ -50,7 +59,16 @@
         busy: false,
         newOut: NewOutput,
         viewOutput: ViewOutput,
+        criteria: '',
         outputs: []
+      }
+    },
+    computed: {
+      filtered() {
+        return this.outputs.filter(filterCb => {
+          return (filterCb.DOCUMENTO_INV.toLowerCase().trim().indexOf(this.criteria.toLowerCase().trim()) !== -1) ||
+            (filterCb.REFERENCIA.toLowerCase().trim().indexOf(this.criteria.toLowerCase().trim()) !== -1)
+        })
       }
     },
     created() {

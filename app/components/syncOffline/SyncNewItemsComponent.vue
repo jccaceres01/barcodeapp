@@ -7,33 +7,59 @@
     <StackLayout orientation="vertical">
       <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
       <SearchBar hint="Buscar Repuesto" v-model="criteria" @textChange="" @submit="doSearch" />
-      <ListView for="item in searchList" @itemTap="onItemTap" v-show="!ifItemSeleceted">
+      <!--  -->
+      <ListView for="(item, index) in searchList" @itemTap="onItemTap" height="100%"  v-show="!ifItemSeleceted">
         <v-template>
-          <FlexboxLayout flexDirection="row">
-            <Label width="20%" verticalAlignment="center" horizontalAlignment="center" fontSize="50">
-              <Span class="fas" text.decode="&#xf013;" verticalAlignment="center" horizontalAlignment="center"/>
-            </Label>
-            <StackLayout class="list-group-item" width="80%">
-              <Label :text="item.articulo" class="list-group-item-heading fas" fontSize="20" />
-              <Label :text="item.descripcion" class="list-group-item-text" style="color: #878787" />
-            </StackLayout>
-          </FlexboxLayout>
+          <StackLayout orientation="vertical">
+            <FlexboxLayout flexDirection="row" class="p-l-2">
+              <!-- Black Bar -->
+              <StackLayout backgroundColor="#1c1c1c" width="2%"></StackLayout>
+              <StackLayout orientation="vertical" width="98%" class="p-l-4">
+                <Label textWrap="true" class="p-b-10">
+                  <FormattedString>
+                    <Span :text="item.articulo" style="color: #1b1b1b" fontSize="25" />
+                    <Span text="(" fontSize="18" />
+                    <Span :text="item.descripcion" fontSize="18" />
+                    <Span text=")" fontSize="18" />
+                  </FormattedString>
+                </Label>
+                <FlexboxLayout flexDirection="row">
+                  <StackLayout orientation="verticla" width="50%">
+                    <Label text="Cod. Barras Venta: " fontSize="14" style="color: #1b1b1b; font-weight: bold" />
+                    <Label :text="item.codigo_barras_vent" textWrap="true" fontSize="10" />
+                    <Label text="Original: " fontSize="14" style="color: #1b1b1b; font-weight: bold" />
+                    <Label v-if="(item.clasificacion_2 == '02-01')">
+                      <FormattedString>
+                        <Span class="fas" text.decode="&#xf058;"/>
+                      </FormattedString>
+                    </Label>
+                    <Label v-else>
+                      <FormattedString>
+                        <Span class="fas" text.decode="&#xf057;"/>
+                      </FormattedString>
+                    </Label>
+                  </StackLayout>
+                  <StackLayout orientation="verticla" width="50%">
+                    <Label text="Cod Barras Inventario: " fontSize="14" style="color: #1b1b1b; font-weight: bold" />
+                    <Label :text="item.codigo_barras_invt" textWrap="true" fontSize="10" />
+                  </StackLayout>
+                </FlexboxLayout>
+              </StackLayout>
+            </FlexboxLayout>
+          </StackLayout>
         </v-template>
       </ListView>
       <!-- item selected -->
-      <FlexboxLayout backgroundColor="black" flexDirection="row" height="20%" v-show="ifItemSeleceted" class="p-10">
-        <Label width="20%" horizontalAlignment="center" verticalAlignment="center">
-          <Span text.decode="&#xf013;" class="fas thumb p-16" fontSize="60" style="color: #ffffff" />
-        </label>
-        <StackLayout width="80%">
-            <Label>
+      <FlexboxLayout backgroundColor="black" flexDirection="row" v-show="ifItemSeleceted" class="p-10">
+        <StackLayout width="100%">
+            <Label textWrap="true">
               <FormattedString>
                 <Span class="fas" text.decode="&#xf192;" style="color: #ffffff" />
                 <Span text="Código Softland: " class="fas" style="color: #ffffff" />
                 <Span :text="itemSelected.articulo" style="color: #ffffff" />
               </FormattedString>
             </Label>
-            <Label>
+            <Label textWrap="true">
               <FormattedString>
                 <Span class="fas" text.decode="&#xf192;" style="color: #ffffff" />
                 <Span text="Descripción: " class="fas" style="color: #ffffff" />
@@ -41,7 +67,7 @@
                 <Span :text="itemSelected.descripcion" style="color: #ffffff" />
               </FormattedString>
             </Label>
-            <Label>
+            <Label textWrap="true">
               <FormattedString>
                 <Span class="fas" text.decode="&#xf192;" style="color: #ffffff" />
                 <Span text="Cod. Barras Inventario: " class="fas" style="color: #ffffff" />
@@ -49,7 +75,7 @@
                 <Span :text="itemSelected.codigo_barras_invt" style="color: #ffffff" wrapText="true" />
               </FormattedString>
             </Label>
-            <Label>
+            <Label textWrap="true">
               <FormattedString>
                 <Span class="fas" text.decode="&#xf192;" style="color: #ffffff" />
                 <Span text="Cod. Barras Ventas: " class="fas" style="color: #ffffff" />
@@ -136,7 +162,9 @@
           // find searchList with criteria data
           db_promise.then(db => {
             db.resultType(Sqlite.RESULTSASOBJECT)
-            db.all("select * from articulo where descripcion like ?",['%'+this.criteria+'%'], (er, res) => {
+            db.all('select * from articulo where descripcion like ? or'+
+            ' articulo like ?',['%'+this.criteria+'%', '%'+this.criteria+'%'],
+             (er, res) => {
               if (!er) {
                 if (res.length > 0) {
                   this.searchList = res
