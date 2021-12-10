@@ -5,16 +5,16 @@
     </ActionBar>
 
     <StackLayout orientation="vertical">
-      <ActivityIndicator busy="true" @busyChange="" v-show="busy" />
-      <Label verticalAlignment="center" horizontalAlignment="center" fontSize="20" class="p-t-10" v-show="busy">
+      <ActivityIndicator :busy="$store.state.loading" v-if="$store.state.loading" />
+      <Label verticalAlignment="center" horizontalAlignment="center" fontSize="20" class="p-t-10" v-if="$store.state.loading">
         <FormattedString>
           <Span class="fas" text.decode="&#xf12a;"/>
           <Span text=" " fontSize="20" />
           <Span :text="status" fontSize="20" />
         </FormattedString>
       </Label>
-      <SearchBar hint="Buscar Repuestos" v-model="criteria" @textChange="" @submit="findItem" />
-      <ListView for="item in results" @itemTap="" height="100%">
+      <SearchBar hint="Buscar Repuestos" v-model="criteria" @submit="findItem" />
+      <ListView for="item in results" height="100%">
         <v-template>
           <StackLayout orientation="vertical">
             <FlexboxLayout flexDirection="row" class="p-l-2">
@@ -64,27 +64,20 @@
 </template>
 
 <script>
-  import axios from 'axios'
   import Sqlite from 'nativescript-sqlite'
-  import Configuration from '../../customconfig.json'
+  import { mapActions } from 'vuex'
 
   export default {
     data() {
       return {
-        busy: false,
         status: '',
         criteria: '',
         results: []
       }
     },
-    mounted() {
-
-    },
-    computed: {
-    },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() { this.busy = false },
+      ...mapActions(['loadOn', 'loadOff']),
+      
       findItem() {
         if (Sqlite.exists('local')) {
 

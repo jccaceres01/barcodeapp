@@ -1,18 +1,17 @@
 <template>
   <Page class="page">
-    <ActionBar class="action-bar" title="Consulta">
+    <ActionBar class="action-bar" title="Consultar Repuestos">
       <NavigationButton text="Atras" android.systemIcon="ic_menu_back" @tap="$navigateBack" />
     </ActionBar>
 
     <StackLayout orientation="vertical">
-      <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
-      <SearchBar hint="Usar Código, Número de parte" v-model="criteria" @textChange="" @submit="searchItems" />
+      <ActivityIndicator :busy="$store.state.loading" v-if="$store.state.loading" />
+      <SearchBar hint="Usar Código, Número de parte" v-model="criteria"  @submit="searchItems" />
       <!-- <Button text="Limpiar Resultados" @tap="clear()" v-show="hasItems" /> -->
-      <ListView for="item in items" @itemTap="" height="100%">
+      <ListView for="item in items" height="100%">
         <v-template>
           <StackLayout orientation="vertical">
             <FlexboxLayout flexDirection="row" class="p-l-2">
-              <!-- Black Bar -->
               <StackLayout backgroundColor="#1c1c1c" width="2%"></StackLayout>
               <StackLayout orientation="vertical" width="98%" class="p-l-4">
                 <Label textWrap="true" class="p-b-10">
@@ -59,7 +58,8 @@
 
 <script>
   import conf from '../../customconfig.json'
-  import axios from 'axios'
+  import { Http } from '@nativescript/core'
+  import { mapActions } from 'vuex'
 
   export default {
     data() {
@@ -71,30 +71,22 @@
       }
     },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() { this.busy = false },
+      ...mapActions(['test', 'loadOn', 'loadOff']),
       clear() {
         this.items = []
         this.criteria = ''
         this.loadOff()
       },
-      searchItems() {
+      async searchItems() {
         this.loadOn()
-        axios.get(this.api+'search/articuloscodigo', {
-          params: {
-            criteria: this.criteria
-          }
-        }).then(res => {
-          if (res.data.length > 0) {
-            this.items = res.data
-          } else {
-            alert('No se encontraron respuestos')
-          }
-          this.loadOff()
-        }).catch(er => {
+        try {
+          // Get data
+          let res = await Http.getJSON(`${this.api}/search/articuloscodigo?criteria=${this.criteria}`)
+          this.items = res
+        } catch (er) {
           alert(er)
-          this.clear()
-        })
+        }
+        this.loadOff()
       }
     },
     computed: {

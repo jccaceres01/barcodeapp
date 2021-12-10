@@ -3,8 +3,9 @@
     <ActionBar class="action-bar" title="Seleccionar Repuesto" />
 
     <StackLayout orientation="vertical">
-      <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
-      <SearchBar hint="Buscar Repuesto" v-model="criteria" @textChange="" @submit="findItem" />
+      <Label text="Seleccionar Repuesto" fontSize="30" textWrap="true" class="accent-bg scc-yellow" />
+      <ActivityIndicator :busy="$store.state.loading" v-if="$store.state.loading" />
+      <SearchBar hint="Buscar Repuesto" v-model="criteria" @submit="findItem" />
       <!-- Status label -->
       <Label :text="status" fontSize="18" textWrap="true" v-show="searchList.length <= 0" verticalAlignment="center" horizontalAlignment="center" class="p-5" />
       <!-- List  of items -->
@@ -55,11 +56,11 @@
 
 <script>
   import Sqlite from 'nativescript-sqlite'
+  import { mapActions } from 'vuex'
 
   export default {
     data() {
       return {
-        busy: false,
         status: '',
         criteria: '',
         searchList: []
@@ -69,8 +70,8 @@
       this.status = 'Repuesto no seleccionado'
     },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() { this.busy = false },
+      ...mapActions(['loadOn', 'loadOff']),
+
       findItem() {
         if (Sqlite.exists('local')) {
           this.loadOn()
@@ -118,5 +119,13 @@
 
   .info {
       font-size: 20;
+  }
+
+  .accent-bg {
+    background: $accent-dark;
+  }
+
+  .scc-yellow {
+    color: $scc-yellow;
   }
 </style>

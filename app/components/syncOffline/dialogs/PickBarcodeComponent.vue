@@ -3,12 +3,12 @@
     <ActionBar title="" class="action-bar" />
 
     <StackLayout orientation="vertical" style="padding: 10">
-      <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
+      <ActivityIndicator :busy="busy" v-show="busy" />
       <Label text="Leer Código De Barras" horizontalAlignment="center" />
       <Label horizontalAlignment="center">
         <Span class="fas bigicon" text.decode="&#xf02a;" horizontalAlignment="center "/>
       </Label>
-      <TextField v-model="input" hint="Código de Barras" @textChange="" @returnPress="returnBarcode" keyboardType="text" horizontalAlignment="center"/>
+      <TextField v-model="input" hint="Código de Barras" @returnPress="returnBarcode" keyboardType="text" horizontalAlignment="center"/>
     </StackLayout>
   </Page>
 </template>

@@ -1,14 +1,15 @@
 <template>
   <Page>
     <StackLayout>
-      <Label text="Centro de Costo" fontSize="20" textWrap="true" verticalAlignment="center" horizontalAlignment="center" padding="10" />
+      <ActivityIndicator :busy="$store.state.loading" v-if="$store.state.loading" />
+      <Label text="Centro de Costo" fontSize="30" class="accent-bg scc-yellow" />
       <ListView for="item in costCenters" @itemTap="returnValue" width="99%" height="99%">
         <v-template>
           <StackLayout orientation="vertical" width="100%" height="100%">
             <Label text="" textWrap="true">
               <FormattedString>
                 <Span class="fas" text.decode="&#xf013;"/>
-                <Span :text="item.value" fontSize="18" />
+                <Span :text="item.value" fontSize="35" textWrap="true" />
               </FormattedString>
             </Label>
           </StackLayout>
@@ -34,6 +35,10 @@
           {
             id: '01-02-14',
             value: ' H.S.E.- PVDC'
+          },
+          {
+            id: '01-02-16',
+            value: 'Excavación de Frente Minero - FALCONDO'
           }
         ]
       }
@@ -47,5 +52,24 @@
 </script>
 
 <style lang="scss" scoped>
+  // Start custom common variables
+  @import '../../../app-variables';
+  // End custom common variables
 
+  // Custom styles
+  .fa {
+      color: $accent-dark;
+  }
+
+  .accent-bg {
+    background: $accent-dark;
+  }
+
+  .scc-yellow {
+    color: $scc-yellow;
+  }
+
+  .info {
+      font-size: 20;
+  }
 </style>

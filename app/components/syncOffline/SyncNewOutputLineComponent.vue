@@ -13,15 +13,15 @@
 
     <StackLayout orientation="vertical">
       <!-- Concurency -->
-      <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
-      <Label textWrap="true" v-show="busy" verticalAlignment="center" horizontalAlignment="center">
+      <ActivityIndicator :busy="$store.state.loading" v-show="$store.state.loading" />
+      <Label textWrap="true" v-if="$store.state.loading" verticalAlignment="center" horizontalAlignment="center">
         <FormattedString>
           <Span class="fas" text.decode="&#xf06a;" />
           <Span :text="status" class="" fontSize="20" />
         </FormattedString>
       </Label>
       <!-- Searchbox to filter list -->
-      <SearchBar hint="filtrar Lineas" v-model="criteria" @textChange="" @submit="" />
+      <SearchBar hint="filtrar Lineas" v-model="criteria" />
       <Label text="No hay Lineas" fontSize="20" horizontalAlignment="center" verticalAlignment="center" padding="10" v-show="!(this.outputLines.length > 0)" />
       <!-- List of items to sync with server -->
       <ListView for="(item, index) in filtered" @itemTap="showDesc(item, index)" height="100%">
@@ -63,11 +63,11 @@
 <script>
 import Sqlite from 'nativescript-sqlite'
 import SyncNewOutputLineFormComponent from './SyncNewOutputLineFormComponent'
+import { mapActions } from 'vuex'
 
 export default {
   data() {
     return {
-      busy: false,
       status: '',
       criteria: '',
       outputLines: [],
@@ -89,11 +89,11 @@ export default {
     }
   },
   methods: {
-    loadOn() { this.busy = true },
-    loadOff() { this.busy = false},
+    ...mapActions(['loadOn', 'loadOff']),
+
     // Show modal to add new line
     addNewLine(output) {
-      this.$navigateTo(this.newLine, {props: {salida: this.salida}})
+      this.$navigateTo(this.newLine, {props: {salida: this.salida, parent: this}})
     },
     // Fill lines
     fillLines() {

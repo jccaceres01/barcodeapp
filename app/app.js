@@ -1,8 +1,10 @@
-import Vue from "nativescript-vue";
+import Vue from "nativescript-vue"
+import store from './store/store.js'
 
-import Home from "./components/Home";
-import SyncInventoryTicketComponent from './components/syncOffline/SyncInventoryTicketComponent'
-import SyncNewInventoryTicketComponent from './components/syncOffline/SyncNewInventoryTicketComponent'
+// import Test from './components/test/Test'
+import Home from "./components/Home"
+
+Vue.config.silent = false
 
 new Vue({
 
@@ -12,8 +14,7 @@ new Vue({
         </Frame>`,
 
     components: {
-        Home,
-        SyncInventoryTicketComponent,
-        SyncNewInventoryTicketComponent,
-    }
+        Home
+    },
+    store: store
 }).$start();

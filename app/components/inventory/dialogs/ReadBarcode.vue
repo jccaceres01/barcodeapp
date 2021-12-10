@@ -3,52 +3,67 @@
     <ActionBar title="" class="action-bar" />
 
     <StackLayout orientation="vertical" style="padding: 10">
-      <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
+      <ActivityIndicator :busy="$store.state.loading" v-if="$store.state.loading" />
       <Label text="Leer Codigo de barras" horizontalAlignment="center" />
       <Label horizontalAlignment="center">
         <Span class="fas bigicon" text.decode="&#xf02a;" horizontalAlignment="center "/>
       </Label>
-      <TextField v-model="criteria" hint="Codigo de Barras" @textChange="" @returnPress="searchByCode" keyboardType="text" horizontalAlignment="center"/>
-      <Button text="No Encontrado" @tap="closeDialog" style="color: #ff3030" v-show="notFound"/>
+      <TextField v-model="criteria" hint="Codigo de Barras" @returnPress="searchByCode" keyboardType="text" horizontalAlignment="center"/>
+      <Button text="No Encontrado" @tap="closeDialog" style="color: #ff3030" v-if="notFound"/>
     </StackLayout>
   </Page>
 </template>
 
 <script>
   import conf from '../../../customconfig.json'
-  import axios from 'axios'
+  import { Http } from '@nativescript/core'
+  import { mapActions } from 'vuex'
 
   export default {
     data() {
       return {
-        apiUrl: conf.api,
-        busy: false,
+        api: conf.api,
         criteria: '',
         notFound: false
       }
     },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() { this.busy = false },
-      searchByCode() {
+      ...mapActions(['loadOn', 'loadOff']),
+
+      async searchByCode() {
         this.loadOn()
-        axios.get(this.apiUrl+'search/articuloscodigo', {
-          params: {
-            criteria: this.criteria
-          }
-        }).then(res => {
-          if (res.data.length > 0) {
-            if (res.data.length > 1) {
-              alert('Existen varios repuestos con este codigo')
-              this.$modal.close()
+        try {
+          let res = await Http.getJSON(`${this.api}/buscar?barcode=${this.criteria}`)
+
+          if (res.length > 0) {
+              if (res.length > 1) {
+                alert('Existen varios repuestos con este codigo')
+                this.$modal.close()
+              } else if (res.length == 1) {
+                this.$modal.close(res[0].ARTICULO)
+              }
             } else {
-              this.$modal.close(res.data[0].ARTICULO)
+              this.notFound = true
             }
-          } else {
-            this.notFound = true
-            this.loadOff()
-          }
-        }).catch(er => { alert(er) })
+        } catch (error) { alert(error) }
+        this.loadOff()
+        // axios.get(this.apiUrl+'search/articuloscodigo', {
+        //   params: {
+        //     criteria: this.criteria
+        //   }
+        // }).then(res => {
+        //   if (res.data.length > 0) {
+        //     if (res.data.length > 1) {
+        //       alert('Existen varios repuestos con este codigo')
+        //       this.$modal.close()
+        //     } else {
+        //       this.$modal.close(res.data[0].ARTICULO)
+        //     }
+        //   } else {
+        //     this.notFound = true
+        //     this.loadOff()
+        //   }
+        // }).catch(er => { alert(er) })
       },
       closeDialog() {
         this.$modal.close()

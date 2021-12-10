@@ -6,8 +6,8 @@
 
     <StackLayout orientation="vertical">
       <!-- Concurency -->
-      <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
-      <Label textWrap="true" v-show="busy" verticalAlignment="center" horizontalAlignment="center">
+      <ActivityIndicator :busy="$store.state.loading" v-if="$store.state.loading" />
+      <Label textWrap="true" v-if="$store.state.loading" verticalAlignment="center" horizontalAlignment="center">
         <FormattedString>
           <Span class="fas" text.decode="&#xf06a;" />
           <Span :text="status" class="" fontSize="20" />
@@ -18,7 +18,7 @@
         <StackLayout orientation="vertical" style="padding: 20">
             <!-- articulo -->
             <StackLayout orientation="horizontal" width="100%">
-              <TextField v-model="newLine.articulo" hint="Articulo" @textChange="" @returnPress="" keyboardType="text" width="80%" editable="false"/>
+              <TextField v-model="newLine.articulo" hint="Articulo" keyboardType="text" width="80%" editable="false"/>
               <Button @tap="pickItem" width="20%">
                 <Span class="fas" text.decode="&#xf13a; "/>
               </Button>
@@ -26,7 +26,7 @@
 
             <!-- bodega -->
             <StackLayout orientation="horizontal">
-              <TextField :text="newLine.bodega" hint="Bodega" @textChange="" @returnPress="" keyboardType="text" width="80%" editable="false" />
+              <TextField :text="newLine.bodega" hint="Bodega" keyboardType="text" width="80%" editable="false" />
               <Button @tap="getWarehouse" width="20%">
                 <Span class="fas" text.decode="&#xf13a; "/>
               </Button>
@@ -34,7 +34,7 @@
 
             <!-- location -->
             <StackLayout orientation="horizontal">
-              <TextField :text="newLine.localizacion" hint="Localizacion" @textChange="" @returnPress="" keyboardType="text" width="80%" editable="false" />
+              <TextField :text="newLine.localizacion" hint="Localizacion" keyboardType="text" width="80%" editable="false" />
               <Button @tap="getLocation" width="20%">
                 <Span class="fas" text.decode="&#xf13a; "/>
               </Button>
@@ -62,16 +62,19 @@
 <script>
 import CostCenter from '../outputs/OutputsDialogs/Costcenter'
 import PickBarcodeComponent from './dialogs/PickBarcodeComponent'
+import { mapActions } from 'vuex'
+
 import PickOfflineWarehouseComponent from
   './dialogs/PickOfflineWarehouseComponent'
+
 import PickOfflinelocationComponent from
   './dialogs/PickOfflinelocationComponent'
+
 import Sqlite from 'nativescript-sqlite'
 
 export default {
   data() {
     return {
-      busy: false,
       status: '',
       criteria: '',
       newLine: {
@@ -87,12 +90,15 @@ export default {
       readedCode: ''
     }
   },
-  props: ['salida'],
-  mounted() {
+  props: {
+    salida: {type: Object},
+    parent: {type: Object}
+  },
+  created() {
   },
   methods: {
-    loadOn() { this.busy = true },
-    loadOff() { this.busy = false },
+    ...mapActions(['loadOn', 'loadOff']),
+
     // Pick cost center
     pickCC() {
       this.$showModal(this.costCenter).then(res => {
@@ -150,7 +156,7 @@ export default {
     },
     // Pick warehouse
     getWarehouse() {
-      this.$showModal(this.pickWarehouse).then(res => {
+      this.$showModal(this.pickWarehouse, {fullscreen: true}).then(res => {
         if (res != null) {
           this.newLine.bodega = res
         }
@@ -159,7 +165,7 @@ export default {
     // get location
     getLocation() {
       if (this.newLine.bodega.trim() != '') {
-        this.$showModal(this.pickLocations, { props: {bodega: this.newLine.bodega}}).then(res => {
+        this.$showModal(this.pickLocations, { fullscreen: true, props: {bodega: this.newLine.bodega}}).then(res => {
           if (res != null) {
             this.newLine.localizacion = res
           }
@@ -208,6 +214,7 @@ export default {
           this.status = ''
 
           alert('Linea Agregada')
+          this.parent.fillLines()
           this.$navigateBack()
 
         } else { alert('No existe la base de datos local') }

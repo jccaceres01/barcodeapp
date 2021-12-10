@@ -1,36 +1,26 @@
 {
-  "nativescript": {
-    "id": "org.nativescript.barcodeapp",
-    "tns-ios": {
-      "version": "6.0.1"
-    },
-    "tns-android": {
-      "version": "6.0.0"
-    }
-  },
   "description": "NativeScript Application",
   "license": "SEE LICENSE IN <your-license-filename>",
   "repository": "<fill-your-repository-here>",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.9.0",
+    "@nativescript/core": "~8.1.1",
     "axios": "^0.18.1",
     "moment": "^2.24.0",
     "nativescript-drop-down": "^5.0.1",
     "nativescript-sqlite": "^2.3.3",
     "nativescript-theme-core": "^1.0.6",
     "nativescript-ui-dataform": "5.0.0",
-    "nativescript-vue": "2.3.0",
-    "tns-core-modules": "6.0.1"
+    "nativescript-vue": "~2.9.0",
+    "vuex": "^3.6.2"
   },
   "devDependencies": {
-    "@babel/core": "~7.1.0",
-    "@babel/preset-env": "~7.1.0",
-    "babel-loader": "^8.0.6",
-    "nativescript-dev-webpack": "1.0.1",
-    "nativescript-vue-template-compiler": "~2.0.0",
-    "node-sass": "4.12.0",
-    "vue-loader": "~15.4.0"
+    "@nativescript/android": "8.1.1",
+    "@nativescript/webpack": "~5.0.0",
+    "nativescript-vue-template-compiler": "~2.9.0",
+    "sass": "~1.39.0"
   },
   "gitHead": "f548ec926e75201ab1b7c4a3a7ceefe7a4db15af",
-  "readme": "NativeScript Application"
+  "readme": "NativeScript Application",
+  "main": "./app/app.js"
 }

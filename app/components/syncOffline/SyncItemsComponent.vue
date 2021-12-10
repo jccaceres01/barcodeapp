@@ -16,8 +16,8 @@
 
     <!-- Status label -->
     <StackLayout orientation="horzontal">
-      <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
-      <Label textWrap="true" v-show="busy" verticalAlignment="center" horizontalAlignment="center">
+      <ActivityIndicator :busy="$store.state.loading" v-show="$store.state.loading" />
+      <Label textWrap="true" v-if="$store.state.loading" verticalAlignment="center" horizontalAlignment="center">
         <FormattedString>
           <Span class="fas" text.decode="&#xf06a;" />
           <Span :text="status" class="" fontSize="20" />
@@ -25,14 +25,14 @@
       </Label>
       <!-- Action buttons for list -->
       <FlexboxLayout flexDirection="row">
-        <Button @tap="$navigateTo(newItems)" style="width: 50%">
+        <Button @tap="addNewItem" style="width: 50%">
           <FormattedString>
             <Span class="fas" text.decode="&#xf0fe;" fontSize="20" />
             <Span text.decode="&#xa;" />
             <Span text="Escanear Nuevo" class="fas"/>
           </FormattedString>
         </Button>
-        <Button @tap="uploadScanned" style="width: 50%" >
+        <Button @tap="uploadScanned" style="width: 50%">
             <FormattedString>
               <Span class="fas" text.decode="&#xf093;" fontSize="20" />
               <Span text.decode="&#xa;" />
@@ -42,8 +42,8 @@
       </FlexboxLayout>
 
       <!-- Searchbox to filter list -->
-      <TextField v-model="criteria" hint="Filtrar Escaneados" @textChange="" @returnPress="" keyboardType="Text" class="p-10" v-show="(this.scanned.length > 0)" />
-      <ListView for="(item, index) in filtered" @itemTap="onItemTap" v-show="!ifItemSeleceted" v-if="this.scanned.length > 0">
+      <TextField v-model="criteria" hint="Filtrar Escaneados" keyboardType="Text" class="p-10" v-show="(this.scanned.length > 0)" />
+      <ListView for="(item, index) in filtered" v-if="this.scanned.length > 0">
         <v-template>
           <FlexboxLayout backgroundColor="black" flexDirection="row" class="p-10">
             <StackLayout width="80%">
@@ -83,16 +83,16 @@
 </template>
 
 <script>
-  import axios from 'axios'
+  import { Http } from '@nativescript/core'
+  import { mapActions } from 'vuex'
   import Sqlite from 'nativescript-sqlite'
-  import Configuration from '../../customconfig.json'
+  import conf from '../../customconfig.json'
   import SyncNewItemsComponent from './SyncNewItemsComponent'
 
   export default {
     data() {
       return {
-        api: Configuration.api,
-        busy: false,
+        api: conf.api,
         status: '',
         criteria: '',
         scanned: [],
@@ -107,14 +107,14 @@
         })
       }
     },
-    mounted() {
+    created() {
       this.fillScanned()
     },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() {
-        this.busy = false
-        this.status = ''
+      ...mapActions(['loadOn', 'loadOff']),
+
+      addNewItem() {
+        this.$navigateTo(this.newItems, {props: {parent: this}})
       },
       fillScanned() {
         this.loadOn()
@@ -168,32 +168,47 @@
       },
       //  Upload escanados
       async uploadScanned() {
-
         this.loadOn()
         this.status = 'Subiendo Escaneados...'
-
-        var ops = []
-        var response_dt = null
-
         try {
-          for (var i = 0; i < this.scanned.length; i++) {
-            this.status = 'Subiendo escaneado: '+i+ ' de '+this.scanned.length
-            let op = await axios.put(this.api+'articulos/'+this.scanned[i].articulo, {
-              'CODIGO_BARRAS_VENT': this.scanned[i].codigo_barras_vent,
-              'CODIGO_BARRAS_INVT': this.scanned[i].codigo_barras_invt
+          this.scanned.forEach(async (el, index) => {
+            this.status = `Subiendo escaneado ${index + 1} / ${this.scanned.length}`
+            await Http.request({
+              url: `${this.api}/articulos/${el.articulo}?CODIGO_BARRAS_VENT=${el.codigo_barras_vent}&CODIGO_BARRAS_INVT=${el.codigo_barras_invt}`,
+              method: 'PUT',
+              headers: {'Content-Type': 'application/json'}
             })
-
-            ops.push(op)
-          }
-
-          let out = await axios.all(ops)
+          })
           alert('Escaneados Subidos')
-        } catch (e) {
-          alert(e)
-        }
-
-        this.loadOff()
+        } catch (error) { alert(error) }
         this.status = ''
+        this.loadOff()
+        
+        // this.loadOn()
+        // this.status = 'Subiendo Escaneados...'
+
+        // var ops = []
+        // var response_dt = null
+
+        // try {
+        //   for (var i = 0; i < this.scanned.length; i++) {
+        //     this.status = 'Subiendo escaneado: '+i+ ' de '+this.scanned.length
+        //     let op = await axios.put(this.api+'articulos/'+this.scanned[i].articulo, {
+        //       'CODIGO_BARRAS_VENT': this.scanned[i].codigo_barras_vent,
+        //       'CODIGO_BARRAS_INVT': this.scanned[i].codigo_barras_invt
+        //     })
+
+        //     ops.push(op)
+        //   }
+
+        //   let out = await axios.all(ops)
+        //   alert('Escaneados Subidos')
+        // } catch (e) {
+        //   alert(e)
+        // }
+
+        // this.loadOff()
+        // this.status = ''
       },
       // Clean scanned
       clearScanned() {

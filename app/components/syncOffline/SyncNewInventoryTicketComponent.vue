@@ -7,10 +7,10 @@
 
     <ScrollView orientation="vertical">
       <StackLayout orientation="vertical" style="padding: 20">
-        <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
+        <ActivityIndicator :busy="$store.state.loading" v-if="$store.state.loading" />
           <!-- articulo -->
           <StackLayout orientation="horizontal" width="100%">
-            <TextField v-model="newTicket.articulo" hint="Articulo" @textChange="" @returnPress="" keyboardType="text" width="80%" editable="false"/>
+            <TextField v-model="newTicket.articulo" hint="Articulo" keyboardType="text" width="80%" editable="false"/>
             <Button @tap="getItem" width="20%">
               <Span class="fas" text.decode="&#xf13a; "/>
             </Button>
@@ -18,7 +18,7 @@
 
           <!-- bodega -->
           <StackLayout orientation="horizontal">
-            <TextField v-model="newTicket.bodega" hint="Bodega" @textChange="" @returnPress="" keyboardType="text" width="80%" editable="false" />
+            <TextField v-model="newTicket.bodega" hint="Bodega"  keyboardType="text" width="80%" editable="false" />
             <Button @tap="pickWarehouse" width="20%">
               <Span class="fas" text.decode="&#xf13a; "/>
             </Button>
@@ -26,14 +26,14 @@
 
           <!-- locatio -->
           <StackLayout orientation="horizontal">
-            <TextField v-model="newTicket.localizacion" hint="Localizacion" @textChange="" @returnPress="" keyboardType="text" width="80%" editable="false" />
+            <TextField v-model="newTicket.localizacion" hint="Localizacion" keyboardType="text" width="80%" editable="false" />
             <Button @tap="pickLocation" width="20%">
               <Span class="fas" text.decode="&#xf13a; "/>
             </Button>
           </StackLayout>
 
           <!-- Cantidad -->
-          <TextField v-model="newTicket.cant" hint="Cantidad" @textChange="" @returnPress="" keyboardType="number"/>
+          <TextField v-model="newTicket.cant" hint="Cantidad" keyboardType="number"/>
 
           <!-- freeze exists -->
           <StackLayout orientation="horizontal">
@@ -43,7 +43,7 @@
 
           <!-- fecha_descong -->
           <StackLayout orientation="horizontal" v-show="itemEnabled">
-            <TextField v-model="newTicket.fecha_descong" hint="Fecha Descongelacion" @textChange="" @returnPress="" keyboardType="Date"  width="80%" editable="false" />
+            <TextField v-model="newTicket.fecha_descong" hint="Fecha Descongelacion" keyboardType="Date"  width="80%" editable="false" />
             <Button @tap="pickDate" width="20%">
               <Span class="fas" text.decode="&#xf13a; "/>
             </Button>
@@ -64,15 +64,18 @@
   import PickOfflineLocationComponent from './dialogs/PickOfflineLocationComponent'
   import PickDate from '../inventory/dialogs/PickDate'
   import moment from 'moment'
+  import { mapActions } from 'vuex'
 
   export default {
     created() {
       // this.getWarehouses()
     },
+    props: {
+      parent: {type: Object}
+    },
     data() {
       return {
         apiUrl: conf.api,
-        busy: false,
         itemEnabled: false,
         criteria: '',
         offLineItem: PickOfflineItemComponent,
@@ -90,8 +93,8 @@
       }
     },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() { this.busy = false},
+      ...mapActions(['loadOn', 'loadOff']),
+
       clearAll() {
         this.newTicket.articulo = null
         this.newTicket.bodega = null
@@ -101,19 +104,19 @@
         this.busy = false
       },
       getItem() {
-        this.$showModal(this.offLineItem).then( res => {
+        this.$showModal(this.offLineItem, {fullscreen: true}).then( res => {
           this.newTicket.articulo = res.articulo
           this.newTicket.descripcion = res.descripcion
         })
       },
       pickWarehouse() {
-        this.$showModal(this.offLineWarehouse).then( res => {
+        this.$showModal(this.offLineWarehouse, {fullscreen: true}).then( res => {
           this.newTicket.bodega = res
         })
       },
       pickLocation() {
         if (this.newTicket.bodega != null) {
-          this.$showModal(this.offLocation, {props: {bodega: this.newTicket.bodega}}).then( res => {
+          this.$showModal(this.offLocation, {fullscreen: true, props: {bodega: this.newTicket.bodega}}).then( res => {
             this.newTicket.localizacion = res
           })
         } else {
@@ -161,7 +164,8 @@
 
               alert('Boleta creada')
             }
-
+            
+            this.parent.getTickets()
             this.$navigateBack()
 
           } else {

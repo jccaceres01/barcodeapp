@@ -3,10 +3,10 @@
     <ActionBar class="action-bar" title="Seleccionar Bodega" />
 
     <StackLayout orientation="vertical">
-      <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
-      <Label :text="status" fontSize="18" textWrap="true" verticalAlignment="center" horizontalAlignment="center" class="p-5" />
+      <Label text="Seleccionar Localización" fontSize="30" textWrap="true" class="accent-bg scc-yellow" />
+      <ActivityIndicator :busy="$store.state.loading" v-if="$store.state.loading" />
       <!-- Filter box -->
-      <SearchBar hint="Filtrar Localizaciones" v-model="criteria" @textChange="" @submit="" />
+      <SearchBar hint="Filtrar Localizaciones" v-model="criteria" />
       <!-- List  of items -->
       <ListView for="(item, index) in filtered" @itemTap="pickThis" height="100%">
         <v-template>
@@ -38,11 +38,11 @@
 
 <script>
   import Sqlite from 'nativescript-sqlite'
+  import { mapActions } from 'vuex'
 
   export default {
     data() {
       return {
-        busy: false,
         status: 'Seleccionar Localización',
         criteria: '',
         localizaciones: []
@@ -61,8 +61,8 @@
       }
     },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() { this.busy = false },
+      ...mapActions(['loadOn', 'loadOff']),
+      
       pickThis(event) {
         this.$modal.close(event.item.localizacion)
       },
@@ -113,5 +113,13 @@
 
   .info {
       font-size: 20;
+  }
+
+  .accent-bg {
+    background: $accent-dark;
+  }
+
+  .scc-yellow {
+    color: $scc-yellow;
   }
 </style>

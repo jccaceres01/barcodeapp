@@ -1,0 +1,37 @@
++--------+-----------+---------------------------------------------+-------------------+------------------------------------------------------------------------+------------+
+| Domain | Method    | URI                                         | Name              | Action                                                                 | Middleware |
++--------+-----------+---------------------------------------------+-------------------+------------------------------------------------------------------------+------------+
+|        | GET|HEAD  | /                                           |                   | Closure                                                                | web        |
+|        | GET|HEAD  | api/articulos                               | articulos.index   | App\Http\Controllers\Api\ArticulosController@index                     | api        |
+|        | POST      | api/articulos                               | articulos.store   | App\Http\Controllers\Api\ArticulosController@store                     | api        |
+|        | GET|HEAD  | api/articulos/create                        | articulos.create  | App\Http\Controllers\Api\ArticulosController@create                    | api        |
+|        | GET|HEAD  | api/articulos/{articulo}                    | articulos.show    | App\Http\Controllers\Api\ArticulosController@show                      | api        |
+|        | PUT|PATCH | api/articulos/{articulo}                    | articulos.update  | App\Http\Controllers\Api\ArticulosController@update                    | api        |
+|        | DELETE    | api/articulos/{articulo}                    | articulos.destroy | App\Http\Controllers\Api\ArticulosController@destroy                   | api        |
+|        | GET|HEAD  | api/articulos/{articulo}/edit               | articulos.edit    | App\Http\Controllers\Api\ArticulosController@edit                      | api        |
+|        | GET|HEAD  | api/bodega                                  |                   | App\Http\Controllers\Api\BodegaController@index                        | api        |
+|        | GET|HEAD  | api/bodega/{bodega}                         |                   | App\Http\Controllers\Api\BodegaController@getStorage                   | api        |
+|        | GET|HEAD  | api/buscar                                  |                   | App\Http\Controllers\Api\OutPutsController@lookupBybarcode             | api        |
+|        | POST      | api/inventory/ticket                        |                   | App\Http\Controllers\Api\PhisicalInventoryTicketController@store       | api        |
+|        | GET|HEAD  | api/inventory/ticket                        |                   | App\Http\Controllers\Api\PhisicalInventoryTicketController@index       | api        |
+|        | DELETE    | api/inventory/ticket/{inventory_ticket}     |                   | App\Http\Controllers\Api\PhisicalInventoryTicketController@delete      | api        |
+|        | GET|HEAD  | api/inventory/ticket/{inventory_ticket}     |                   | App\Http\Controllers\Api\PhisicalInventoryTicketController@show        | api        |
+|        | GET|HEAD  | api/localizacion                            |                   | App\Http\Controllers\Api\LocalizacionController@index                  | api        |
+|        | GET|HEAD  | api/localizacion/{bodega}                   |                   | App\Http\Controllers\Api\LocalizacionController@getLocationFromStorage | api        |
+|        | GET|HEAD  | api/localizacion/{bodega}/{localizacion}    |                   | App\Http\Controllers\Api\LocalizacionController@getSpecificLocation    | api        |
+|        | GET|HEAD  | api/lote                                    | lote.index        | App\Http\Controllers\Api\ExistenciaLoteController@index                | api        |
+|        | POST      | api/lote                                    | lote.store        | App\Http\Controllers\Api\ExistenciaLoteController@store                | api        |
+|        | GET|HEAD  | api/lote/{bodega}/{articulo}/{localizacion} | lote.show         | App\Http\Controllers\Api\ExistenciaLoteController@show                 | api        |
+|        | PUT|PATCH | api/lote/{bodega}/{articulo}/{localizacion} | lote.update       | App\Http\Controllers\Api\ExistenciaLoteController@update               | api        |
+|        | DELETE    | api/lote/{bodega}/{articulo}/{localizacion} | lote.destroy      | App\Http\Controllers\Api\ExistenciaLoteController@destroy              | api        |
+|        | POST      | api/outputline                              |                   | App\Http\Controllers\Api\OutputsController@createLine                  | api        |
+|        | DELETE    | api/outputlines                             |                   | App\Http\Controllers\Api\OutPutsController@delOutputsLines             | api        |
+|        | GET|HEAD  | api/outputlines/{documento_inv}             |                   | App\Http\Controllers\Api\OutputsController@getOutputsLines             | api        |
+|        | POST      | api/outputs                                 |                   | App\Http\Controllers\Api\OutputsController@createOutputs               | api        |
+|        | GET|HEAD  | api/outputs                                 |                   | App\Http\Controllers\Api\OutputsController@getOutputs                  | api        |
+|        | GET|HEAD  | api/search/articulos                        | articulos.search  | App\Http\Controllers\Api\ArticulosController@customSearch              | api        |
+|        | GET|HEAD  | api/search/articuloscodigo                  | articulos.search  | App\Http\Controllers\Api\ArticulosController@customSearchWithBarcode   | api        |
+|        | GET|HEAD  | api/stock/lote                              |                   | App\Http\Controllers\Api\ArticulosController@loteStockLevel            | api        |
+|        | GET|HEAD  | api/user                                    |                   | Closure                                                                | api        |
+|        |           |                                             |                   |                                                                        | auth:api   |
++--------+-----------+---------------------------------------------+-------------------+------------------------------------------------------------------------+------------+

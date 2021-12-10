@@ -1,11 +1,11 @@
 <template>
   <Page>
     <StackLayout>
-      <ActivityIndicator :busy="busy" @busyChange="" />
-      <Label text="Bodegas" fontSize="30" />
+      <ActivityIndicator :busy="$store.state.loading" v-if="$store.state.loading" />
+      <Label text="Bodegas" fontSize="30" class="accent-bg scc-yellow" />
       <ListView for="item in storages" @itemTap="returnValue" width="*" height="100%">
         <v-template>
-          <Label :text="item.NOMBRE" fonSize="20" />
+          <Label :text="'('+item.BODEGA+') '+item.NOMBRE" fontSize="35" />
         </v-template>
       </ListView>
     </StackLayout>
@@ -13,8 +13,9 @@
 </template>
 
 <script>
-  import axios from 'axios'
   import conf from '../../../customconfig.json'
+  import { Http } from '@nativescript/core'
+  import { mapActions } from 'vuex'
 
   export default {
     data() {
@@ -22,7 +23,6 @@
         // config
         api: conf.api,
         // data
-        busy: false,
         storages: []
       }
     },
@@ -30,17 +30,18 @@
       this.fillStorages()
     },
     methods: {
-      loadOn() { this.busy = true},
-      loadOff() {this.busy = false},
-      fillStorages() {
+      ...mapActions(['loadOn', 'loadOff']),
+
+      async fillStorages() {
         this.loadOn()
-        axios.get(this.api+'bodega').then(res => {
-          this.storages = res.data
-          this.loadOff()
-        }).catch(er => {
-          alert(er)
+        try {
+          let res = await Http.getJSON(`${this.api}/bodega`)
+          this.storages = res
+        } catch (error) {
+          alert(error)
           this.$modal.close()
-        })
+        }
+        this.loadOff()
       },
       returnValue(event) {
         this.$modal.close(event.item)
@@ -50,4 +51,24 @@
 </script>
 
 <style lang="scss" scoped>
+  // Start custom common variables
+  @import '../../../app-variables';
+  // End custom common variables
+
+  // Custom styles
+  .fa {
+      color: $accent-dark;
+  }
+
+  .accent-bg {
+    background: $accent-dark;
+  }
+
+  .scc-yellow {
+    color: $scc-yellow;
+  }
+
+  .info {
+      font-size: 20;
+  }
 </style>

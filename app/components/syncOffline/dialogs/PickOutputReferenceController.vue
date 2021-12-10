@@ -1,19 +1,18 @@
 <template>
   <Page>
-    <ActionBar title="Seleccionar Referencia" class="action-bar" />
-
-    <StackLayout orientation="vertical" padding="20">
-      <Label text="Nueva Salida" fontSize="20" horizontalAlignment="center" verticalAlignment="center" fontWeight="bold" />
-      <TextField v-model="referencia" hint="Introdusca el Número Interno" @textChange="" @returnPress="" keyboardType="Text" maxLength="6" id="ni-field" />
-      <Label text="Seleccionar Centro de Costo: " fontSize="18" paddingTop="20" fontWeight="bold" />
-      <ListPicker :items="costCenters" v-model="selectedItem"
-        @selectedIndexChange="" />
-      <Button text="Agregar Nuevo" @tap="addNew" >
-        <FormattedString>
-          <Span class="fas" text.decode="&#xf055; "/>
-          <Span text=" Agregar Nuevo" />
-        </FormattedString>
-      </button>
+    <StackLayout orientation="vertical">
+      <Label text="Nueva Salida" fontSize="30" class="accent-bg scc-yellow" fontWeight="bold" />
+      <StackLayout orientation="vertical" padding="20">
+        <TextField v-model="referencia" hint="Introdusca el Número Interno" keyboardType="Text" maxLength="6" id="ni-field" />
+        <Label text="Seleccionar Centro de Costo: " fontSize="18" paddingTop="20" fontWeight="bold" />
+        <ListPicker :items="costCenters" v-model="selectedItem" />
+        <Button text="Agregar Nuevo" @tap="addNew" >
+          <FormattedString>
+            <Span class="fas" text.decode="&#xf055; "/>
+            <Span text=" Agregar Nuevo" />
+          </FormattedString>
+        </button>
+      </StackLayout>
     </StackLayout>
   </Page>
 </template>
@@ -44,6 +43,13 @@ export default {
           value: ' H.S.E.- PVDC',
           toString: () => {
             return ' H.S.E.- PVDC'
+          }
+        },
+        {
+          id: '01-02-16',
+          value: 'Excavación de Frente Minero - FALCONDO',
+          toString: () => {
+            return 'Excavación de Frente Minero - FALCONDO'
           }
         }
       ]
@@ -89,5 +95,13 @@ export default {
 
   #ni-field {
     text-transform: uppercase;
+  }
+
+  .accent-bg {
+    background: $accent-dark;
+  }
+
+  .scc-yellow {
+    color: $scc-yellow;
   }
 </style>

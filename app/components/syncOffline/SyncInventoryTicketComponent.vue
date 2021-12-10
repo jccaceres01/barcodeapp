@@ -18,8 +18,8 @@
     </ActionBar>
 
     <StackLayout orientation="vertical" >
-      <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
-      <Label :text="status"  textWrap="true" fontSize="20" color="#787878" horizontalAlignment="center" verticalAlignment="center" v-show="busy" />
+      <ActivityIndicator :busy="$store.state.loading" v-if="$store.state.loading" />
+      <Label :text="status"  textWrap="true" fontSize="20" color="#787878" horizontalAlignment="center" verticalAlignment="center" v-if="$store.state.loading" />
       <GridLayout columns="*, *" rows="70">
         <Button @tap="newSyncInvTck" row="0" col="0">
           <FormattedString>
@@ -40,7 +40,7 @@
       <SearchBar hint="Filtrar Boletas" v-model="criteria" @textChange="" @submit="" v-show="(this.tickets.length > 0)" />
       <Label text="No hay boletas" fontSize="20" color="#6c6c6c" v-show="!(this.tickets.length > 0)" verticalAlignment="center" horizontalAlignment="center" padding="10" />
       <!-- List view tickets -->
-      <ListView for="(item, index) in filtered" @itemTap="pickThis" height="100%">
+      <ListView for="(item, index) in filtered" height="100%">
         <v-template>
           <StackLayout orientation="vertical">
             <FlexboxLayout flexDirection="row" class="p-l-2">
@@ -83,22 +83,21 @@
 </template>
 
 <script>
-  import axios from 'axios'
+  import { Http } from '@nativescript/core'
   import conf from '../../customconfig.json'
   import SyncNewInventoryTicketComponent from './SyncNewInventoryTicketComponent'
   import Sqlite from 'nativescript-sqlite'
-  import moment from 'moment'
-  import * as ApplicatonSettings from 'application-settings'
+  import * as AppSettings from '@nativescript/core/application-settings'
+import { mapActions } from 'vuex'
 
   export default {
     data() {
       return {
-        busy: false,
         api: conf.api,
         status: '',
         criteria: '',
         tickets: [],
-        appSettings: ApplicatonSettings,
+        appSettings: AppSettings,
         syncNewInvTck: SyncNewInventoryTicketComponent
       }
     },
@@ -115,14 +114,14 @@
       this.createLog()
     },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() { this.busy = false },
+      ...mapActions(['loadOn', 'loadOff']),
+      
       refreshList() {
         this.tickets = []
         this.getTickets()
       },
       newSyncInvTck() {
-        this.$navigateTo(this.syncNewInvTck)
+        this.$navigateTo(this.syncNewInvTck, {props: {parent: this}})
       },
       getTickets() {
         if (Sqlite.exists('local')) {
@@ -184,17 +183,31 @@
 
             this.tickets.forEach(async cb => {
               try {
-                var res = await axios.post(this.api+'inventory/ticket', {
-                  articulo: cb.articulo,
-                  bodega: cb.bodega,
-                  localizacion: cb.localizacion,
-                  cant: cb.cantidad,
-                  fecha_descong: cb.fecha_descong
+                
+                let res = await Http.request({
+                  url: `${this.api}/inventory/ticket`,
+                  method: 'POST',
+                  headers: {'Content-Type': 'application/json'},
+                  content: JSON.stringify({
+                    articulo: cb.articulo,
+                    bodega: cb.bodega,
+                    localizacion: cb.localizacion,
+                    cant: cb.cantidad,
+                    fecha_descong: cb.fecha_descong
+                  })
                 })
 
-                switch (res.data) {
+                // var res = await axios.post(this.api+'inventory/ticket', {
+                //   articulo: cb.articulo,
+                //   bodega: cb.bodega,
+                //   localizacion: cb.localizacion,
+                //   cant: cb.cantidad,
+                //   fecha_descong: cb.fecha_descong
+                // })
+
+                switch (res.content.toJSON()) {
                   case 'added':
-                    this.appSettings.setString('uploadLog', '\n -['+ moment(new Date()).format('YYYY-MM-DD H:m:s')+'] Articulo: '+ cb.articulo + ' Agregado '+ this.appSettings.getString('uploadLog'))
+                    this.appSettings.setString('uploadLog', '\n -['+ new Date().toLocaleString() +'] Articulo: '+ cb.articulo + ' Agregado '+ this.appSettings.getString('uploadLog'))
                     promise.then(db => {
                       db.execSQL('delete from boletas where id = ?', [cb.id], (er, id) => {
                         if (er) { alert(er) }
@@ -202,7 +215,7 @@
                     })
                     break;
                   case 'exists':
-                    this.appSettings.setString('uploadLog', '\n -['+ moment(new Date()).format('YYYY-MM-DD H:m:s')+'] Articulo: '+ cb.articulo + ' Existe '+ this.appSettings.getString('uploadLog'))
+                    this.appSettings.setString('uploadLog', '\n -['+ new Date().toLocaleString() +'] Articulo: '+ cb.articulo + ' Existe '+ this.appSettings.getString('uploadLog'))
                     break;
                   default:
                     break;

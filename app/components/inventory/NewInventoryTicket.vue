@@ -7,10 +7,10 @@
 
     <ScrollView orientation="vertical">
       <StackLayout orientation="vertical" style="padding: 20">
-        <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
+        <ActivityIndicator :busy="$store.state.loading" v-if="$store.state.loading" />
           <!-- articulo -->
           <StackLayout orientation="horizontal" width="100%">
-            <TextField v-model="newTicket.articulo" hint="Articulo" @textChange="" @returnPress="" keyboardType="text" width="80%" editable="false"/>
+            <TextField v-model="newTicket.articulo" hint="Articulo" keyboardType="text" width="80%" editable="false"/>
             <Button @tap="readBarcode" width="20%">
               <Span class="fas" text.decode="&#xf13a; "/>
             </Button>
@@ -18,7 +18,7 @@
 
           <!-- bodega -->
           <StackLayout orientation="horizontal">
-            <TextField v-model="newTicket.bodega" hint="Bodega" @textChange="" @returnPress="" keyboardType="text" width="80%" editable="false" />
+            <TextField v-model="newTicket.bodega" hint="Bodega" keyboardType="text" width="80%" editable="false" />
             <Button @tap="pickWarehouse" width="20%">
               <Span class="fas" text.decode="&#xf13a; "/>
             </Button>
@@ -26,14 +26,14 @@
 
           <!-- locatio -->
           <StackLayout orientation="horizontal">
-            <TextField v-model="newTicket.localizacion" hint="Localizacion" @textChange="" @returnPress="" keyboardType="text" width="80%" editable="false" />
+            <TextField v-model="newTicket.localizacion" hint="Localizacion" keyboardType="text" width="80%" editable="false" />
             <Button @tap="pickLocation" width="20%">
               <Span class="fas" text.decode="&#xf13a; "/>
             </Button>
           </StackLayout>
 
           <!-- Cantidad -->
-          <TextField v-model="newTicket.cant" hint="Cantidad" @textChange="" @returnPress="" keyboardType="number"/>
+          <TextField v-model="newTicket.cant" hint="Cantidad"  keyboardType="number"/>
 
           <!-- freeze exists -->
           <StackLayout orientation="horizontal">
@@ -43,7 +43,7 @@
 
           <!-- fecha_descong -->
           <StackLayout orientation="horizontal" v-show="itemEnabled">
-            <TextField v-model="newTicket.fecha_descong" hint="Fecha Descongelacion" @textChange="" @returnPress="" keyboardType="date"  width="80%" editable="false" />
+            <TextField v-model="newTicket.fecha_descong" hint="Fecha Descongelacion" keyboardType="date"  width="80%" editable="false" />
             <Button @tap="pickDate" width="20%">
               <Span class="fas" text.decode="&#xf13a; "/>
             </Button>
@@ -58,7 +58,8 @@
 
 <script>
   import conf from '../../customconfig.json'
-  import axios from 'axios'
+  import { Http, HttpResponse } from '@nativescript/core'
+  import { mapActions } from 'vuex'
   import ReadBarcode from './dialogs/ReadBarcode'
   import StorageSelect from '../Outputs/OutputsDialogs/StorageSelect'
   import PickLocations from './dialogs/PickLocations'
@@ -66,20 +67,16 @@
 
   export default {
     created() {
-      axios.get(this.apiUrl+'bodega').then(res => {
-        this.warehouses = res.data
-      }).catch(er => {
-        alert(er)
-      })
+      this.fillWarehouses()
     },
+    props: ['parent'],
     data() {
       return {
-        apiUrl: conf.api,
+        api: conf.api,
         rdBarcode: ReadBarcode,
         stSelect: StorageSelect,
         lcSelect: PickLocations,
         pickDateDialog: PickDate,
-        busy: false,
         itemEnabled: false,
         criteria: '',
         newTicket:  {
@@ -92,8 +89,8 @@
       }
     },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() { this.busy = false},
+      ...mapActions(['loadOn', 'loadOff']),
+
       clearAll() {
         this.newTicket.articulo = null
         this.newTicket.bodega = null
@@ -108,27 +105,30 @@
         })
       },
       pickWarehouse() {
-        this.$showModal(this.stSelect).then(res => {
+        this.$showModal(this.stSelect, {fullscreen: true}).then(res => {
           this.newTicket.bodega = res.BODEGA
         })
       },
-      pickLocation() {
-        if (this.newTicket.bodega !== null) {
-          this.$showModal(this.lcSelect, {
-            props: { warehouse: this.newTicket.bodega }
-          }).then(res => {
-            this.newTicket.localizacion = res.LOCALIZACION
+      async pickLocation() {
+        try {
+          let con = await this.$showModal(this.lcSelect, {
+            fullscreen: true,
+            props: { warehouse: this.newTicket.bodega }, 
           })
-        } else {
-          alert('Debe seleccionar una bodega')
-        }
+
+          if (con) {
+            this.newTicket.localizacion = con.LOCALIZACION
+          } else {
+            alert('Debe seleccionar una bodega')
+          }
+        } catch (error) { alert(error) }
       },
       pickDate() {
         this.$showModal(this.pickDateDialog).then(res => {
           this.newTicket.fecha_descong = res
         })
       },
-      saveTicket() {
+      async saveTicket() {
         if (this.newTicket.articulo == null) {
           alert('Debe de ingresar el repuesto')
         } else if (this.newTicket.bodega == null) {
@@ -142,32 +142,44 @@
             alert('Debe de ingresar la fecha de descongelacion')
         } else {
           this.loadOn()
-          axios.post(this.apiUrl+'inventory/ticket', {
-            articulo: this.newTicket.articulo,
-            bodega: this.newTicket.bodega,
-            localizacion: this.newTicket.localizacion,
-            cant: this.newTicket.cant,
-            fecha_descong: this.newTicket.fecha_descong
-          }).then(res => {
-            if (res.data == 'added') {
-              this.loadOff()
+          try {
+            let res = await Http.request({
+              url: `${this.api}/inventory/ticket`,
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json'},
+              content: JSON.stringify({
+                articulo: this.newTicket.articulo,
+                bodega: this.newTicket.bodega,
+                localizacion: this.newTicket.localizacion,
+                cant: this.newTicket.cant,
+                fecha_descong: this.newTicket.fecha_descong
+              })
+            })
+
+            if (res.content.toJSON() == 'added') {
               alert('Boleta Agregada')
+              this.parent.filltickets()
               this.$navigateBack()
-            } else if (res.data == 'exists') {
-              this.loadOff()
+            } else if (res.content.toJSON() == 'exists') {
               alert('Esta boleta existe')
               this.$navigateBack()
             }
-          }).catch(er => {
-            alert(er)
-            this.clearAll()
-          })
+          } catch (error) { alert(error) }
+          this.loadOff()
         }
       },
       clearFreezeDate() {
         if (this.itemEnabled == false) {
           this.newTicket.fecha_descong = null
         }
+      },
+      async fillWarehouses() {
+        this.loadOn()
+        try {
+          let res = await Http.getJSON(`${this.api}/bodega`)
+          this.warehouses = res || []
+        } catch (error) { alert(error) }
+        this.loadOff()
       }
     }
   }

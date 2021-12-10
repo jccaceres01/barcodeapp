@@ -3,8 +3,8 @@
     <ActionBar class="action-bar" title="Seleccionar Bodega" />
 
     <StackLayout orientation="vertical">
-      <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
-      <Label :text="status" fontSize="18" textWrap="true" verticalAlignment="center" horizontalAlignment="center" class="p-5" />
+      <ActivityIndicator :busy="$store.state.loading" v-if="$store.state.loading" />
+      <Label text="Seleccionar Bodega" fontSize="30" textWrap="true" class="accent-bg scc-yellow" />
       <!-- List  of items -->
       <ListView for="(item, index) in bodegas" @itemTap="pickThis" height="100%">
         <v-template>
@@ -34,11 +34,11 @@
 
 <script>
   import Sqlite from 'nativescript-sqlite'
+  import { mapActions } from 'vuex'
 
   export default {
     data() {
       return {
-        busy: false,
         status: 'Seleccionar Bodega',
         bodegas: []
       }
@@ -47,8 +47,8 @@
       this.fillWarehouses()
     },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() { this.busy = false },
+      ...mapActions(['loadOn', 'loadOff']),
+      
       pickThis(event) {
         this.$modal.close(event.item.bodega)
       },
@@ -99,5 +99,13 @@
 
   .info {
       font-size: 20;
+  }
+
+  .accent-bg {
+    background: $accent-dark;
+  }
+
+  .scc-yellow {
+    color: $scc-yellow;
   }
 </style>

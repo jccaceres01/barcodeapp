@@ -25,15 +25,15 @@
 
     <StackLayout orientation="vertical">
       <!-- Concurency -->
-      <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
-      <Label textWrap="true" v-show="busy" verticalAlignment="center" horizontalAlignment="center">
+      <ActivityIndicator :busy="$store.state.loading" v-show="$store.state.loading" />
+      <Label textWrap="true" v-show="$store.state.loading" verticalAlignment="center" horizontalAlignment="center">
         <FormattedString>
           <Span class="fas" text.decode="&#xf06a;" />
           <Span :text="status" class="" fontSize="20" />
         </FormattedString>
       </Label>
       <!-- Searchbox to filter list -->
-      <SearchBar hint="filtrar Salidas por referencia" v-model="criteria" @textChange="" @submit="" v-show="(this.outputs.length > 0)" />
+      <SearchBar hint="filtrar Salidas por referencia" v-model="criteria" v-show="(this.outputs.length > 0)" />
       <Label text="No hay salidas" fontSize="20" horizontalAlignment="center" verticalAlignment="center" v-show="!(this.outputs.length > 0)" padding="10" />
       <!-- List of items to sync with server -->
       <ListView for="(item, index) in filtered" @itemTap="showLines(item, index)" height="100%" @onLongPress="removeItem(item, index)">
@@ -86,24 +86,22 @@
 </template>
 
 <script>
-  import axios from 'axios'
+  import { Http, HttpResponse } from '@nativescript/core'
   import Sqlite from 'nativescript-sqlite'
-  import Configuration from '../../customconfig.json'
-  import * as ApplicationSettings from 'application-settings'
+  import conf from '../../customconfig.json'
+  import * as AppSettings from '@nativescript/core/application-settings'
   import SyncNewOutputLineComponent from './SyncNewOutputLineComponent'
-  import PickOutputReferenceController from
-    './dialogs/PickOutputReferenceController'
-  import moment from 'moment'
+  import PickOutputReferenceController from './dialogs/PickOutputReferenceController'
   import LoggerUI from '../utilities/LoggerUI'
+  import { mapActions } from 'vuex'
 
   export default {
     data() {
       return {
-        api: Configuration.api,
-        busy: false,
+        api: conf.api,
         criteria: '',
         status: '',
-        appSettings: ApplicationSettings,
+        appSettings: AppSettings,
         newLine: SyncNewOutputLineComponent,
         pickReferences: PickOutputReferenceController, // Pick referecen and cost center for output
         logView: LoggerUI,
@@ -111,7 +109,7 @@
         output: null
       }
     },
-    mounted() {
+    created() {
       this.fillOutputs()
       this.initLog()
     },
@@ -126,8 +124,8 @@
       }
     },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() { this.busy = false },
+      ...mapActions(['loadOn', 'loadOff']),
+
       resetUploadEr() { this.uploadEr = false },
       // Init uploadLog
       initLog() {
@@ -145,30 +143,37 @@
         this.loadOn()
         this.status = 'Subiendo Salida'
         // Try upload output and store
-        var output = await this.uploadOutput(item.referencia)
+        let output = await this.uploadOutput(item.referencia)
         // Get Local output lines
-        var lines = await this.getLocaOutputLines(item.id)
+        let lines = await this.getLocalOutputLines(item.id)
         // Declare lineUpEr
-        var lineUpEr = false
+        let lineUpEr = false
 
-        if (output.status !== null && lines.length > 0) {
+        if (output.statusCode == 200 && lines.length > 0) {
           // Insert local lines into new output upploaded
+
           for (var i = 0; i < lines.length; i++) {
-            let insertedLine = await axios.post(this.api+'outputline', {
-              documento_inv: output.data[0].DOCUMENTO_INV,
-              articulo: lines[i].articulo,
-              bodega: lines[i].bodega,
-              localizacion: lines[i].localizacion,
-              cantidad: lines[i].cantidad,
-              centro_costo: item.centro_costo
+            let res = await Http.request({
+              url: `${this.api}/outputline`,
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              content: JSON.stringify({
+                documento_inv: output.content.toJSON()[0].DOCUMENTO_INV,
+                articulo: lines[i].articulo,
+                bodega: lines[i].bodega,
+                localizacion: lines[i].localizacion,
+                cantidad: lines[i].cantidad,
+                centro_costo: item.centro_costo
+              })
             })
 
-            switch (insertedLine.data) {
+            switch (res.content.toJSON()) {
               case 'inserted':
                 // Log the event
                 this.logLineUp('Salida local '+item.id.toString()
                   .padStart(6, '0'), 'Linea '+ (i+1) +
-                  ' sincronizada a la salida: '+ output.data[0].DOCUMENTO_INV)
+                  ' sincronizada a la salida: '+ output.content
+                  .toJSON()[0].DOCUMENTO_INV)
                 break;
               case 'noExistsLote':
                 // Set lineUpEr to true
@@ -220,17 +225,29 @@
       },
       // Upload and create output
       async uploadOutput(referencia) {
+        this.loadOn()
         try {
-          return await axios.post(this.api+'outputs', {
-            REFERENCIA: referencia
+          let res = await Http.request({
+            url: `${this.api}/outputs`,
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            content: JSON.stringify({
+              REFERENCIA: referencia
+            })
           })
-        } catch (e) {
-          alert(e)
+
+          return res
+
+          // return await axios.post(this.api+'outputs', {
+          //   REFERENCIA: referencia
+          // })
+        } catch (error) {
+          alert(error)
           return null
         }
       },
       // Get local output lines
-      async getLocaOutputLines(localOutputId) {
+      async getLocalOutputLines(localOutputId) {
         var result = null
         if (Sqlite.exists('local')) {
           new Sqlite('local', (er, db) => {
@@ -255,8 +272,8 @@
       // Log upload line
       logLineUp(title, body) {
         try {
-          var dateTime = new moment(new Date()).format('Y-M-D h:m:s a')
-          var message = '<h4>['+ dateTime + '] - '+ title+ ': </h4>'+
+          var dateTime = new Date()
+          var message = '<h4>['+ dateTime.toLocaleString('es-DO') + '] - '+ title+ ': </h4>'+
             '<ul><li>'+ body +'</li></ul><br>'
           this.appSettings.setString('uploadLog', message + this.appSettings
             .getString('uploadLog'))
@@ -278,7 +295,7 @@
             db.execSQL('delete from salidas where id = ?',
               [item.id], (er, id) => {
                 if (!er) {
-                   this.outputs.splice(index, 1)
+                  this.outputs.splice(index, 1)
                 } else {
                   alert(er)
                 }
@@ -290,7 +307,7 @@
       },
       // New Output
       newOutput() {
-        this.$showModal(this.pickReferences).then(res => {
+        this.$showModal(this.pickReferences, {fullscreen: true}).then(res => {
           if (res.referencia.trim() != '' &&
             res.centroCosto.id.trim() != '') {
               if (Sqlite.exists('local')) {

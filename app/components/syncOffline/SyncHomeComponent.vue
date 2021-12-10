@@ -5,24 +5,17 @@
     </ActionBar>
 
     <StackLayout orientation="vertical" rows="20, *" >
-      <Button text="Crear Base de datos local" @tap="createDb" :isEnabled="!busy" />
-      <Button text="Borrar Base de datos local" @tap="dropDatabase" :isEnabled="!busy" />
-      <Button text="Sincronizar Bodegas" @tap="syncWarehouses" :isEnabled="!busy" />
-      <Button text="Sincronizar Localizaciones" @tap="syncLocations" :isEnabled="!busy" />
-      <Button text="Sincronizar Repuestos" @tap="syncItems" :isEnabled="!busy" />
-      <Button text="Sincronizar Existencias" @tap="syncExists" :isEnabled="!busy" />
+      <Button text="Crear Base de datos local" @tap="createDb" :isEnabled="!$store.state.loading" />
+      <Button text="Borrar Base de datos local" @tap="dropDatabase" :isEnabled="!$store.state.loading" />
+      <Button text="Sincronizar Bodegas" @tap="syncWarehouses" :isEnabled="!$store.state.loading" />
+      <Button text="Sincronizar Localizaciones" @tap="syncLocations" :isEnabled="!$store.state.loading" />
+      <Button text="Sincronizar Repuestos" @tap="syncItems" :isEnabled="!$store.state.loading" />
+      <Button text="Sincronizar Existencias" @tap="syncExists" :isEnabled="!$store.state.loading" />
+      <Button text="Revisar Data" @tap="checkData" :isEnabled="!$store.state.loading" />
 
-      <ActivityIndicator :busy="busy" @busyChange="busyChangeAction" v-show="busy" />
-      <Progress :value="progress" maxValue="this.paginator.last_page" @valueChange="onValueChanged" v-show="busy" />
-      <Label :text="status" class="fas" fontSize="14" verticalAlignment="center" horizontalAlignment="center" v-show="busy" />
-      <!-- Test items -->
-      <!-- <TextField v-model="criteria" hint="Filtrar" @textChange="" @returnPress="" keyboardType="Text"/>
-      <ListView for="item in filtered" @itemTap="onItemTap">
-        <v-template>
-          <StackLayout orientation="vertical">
-          </StackLayout>
-        </v-template>
-      </ListView> -->
+      <ActivityIndicator :busy="$store.state.loading" v-if="$store.state.loading" />
+      <Progress :value="progress" maxValue="this.paginator.last_page" v-show="true" />
+      <Label :text="status" class="fas" fontSize="14" verticalAlignment="center" horizontalAlignment="center" v-if="$store.state.loading" />
     </StackLayout>
   </Page>
 </template>
@@ -31,21 +24,16 @@
 
   import Sqlite from 'nativescript-sqlite'
   import conf from '../../customconfig.json'
-  import axios from 'axios'
+  import { Http } from '@nativescript/core'
+  import { mapActions } from 'vuex'
 
   export default {
     data() {
       return {
-        busy: false,
         api: conf.api,
         status: '',
         progress: 0,
-        // testList: [],
-        // criteria: ''
       }
-    },
-    mounted() {
-
     },
     computed: {
       filtered() {
@@ -55,8 +43,8 @@
       }
     },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() { this.busy = false },
+      ...mapActions(['loadOn', 'loadOff']),
+
       dropDatabase() {
         confirm('Desea Borrar la DB Local?')
           .then(result => {
@@ -143,153 +131,142 @@
       },
       // Sync items
       async syncItems() {
-        this.loadOn()
-        this.status = 'Descargando datos del servidor...'
 
         if (Sqlite.exists('local')) {
-          axios.get(this.api+'articulos').then( res => {
-
-            this.status = 'Insertando datos en la base de datos local...'
-            // Open db local
-            var promise = new Sqlite('local', er => {
-              if (er) { alert(er) }
-            })
-
-            // Clear table articulos
-            promise.then(db => {
-              db.execSQL('delete from articulo', er => {
-                if (er) { alert(er) }
-              })
-            })
-
-            res.data.forEach(cb => {
-              promise.then(db => {
-                db.execSQL('insert into articulo (articulo, descripcion, clasificacion_2, codigo_barras_vent, codigo_barras_invt) values (?, ?, ?, ?, ?)', [cb.ARTICULO, cb.DESCRIPCION, cb.CLASIFICACION_2, cb.CODIGO_BARRAS_VENT, cb.CODIGO_BARRAS_INVT], er => {
-                  if (er) { alert(er) }
-                })
-              })
-            })
-
-            // Close db connection
-            promise.then(db => {
-              db.close()
-            })
-
-            this.loadOff()
+          this.loadOn()
+          try {
             this.status = ''
-          }).catch(er => { alert(er) })
-        } else { alert('No existe la db local') }
+            const db = await Sqlite('local')
+
+            // Drop local items (articulos)
+            this.status = 'Borrando la base de datos local (Repuestos)'
+            await db.execSQL('delete from articulo')
+
+            // Read Data from server
+            this.status = 'Obteniendo datos del servidor'
+            let res = await Http.getJSON(`${this.api}/articulos`)
+
+            if (res) {
+              // Insert response data into local articulos
+              res.forEach(async (el, index) => {
+                this.status = `Sincronizando elemento ${index + 1} / ${res.length}`
+                await db.execSQL('insert into articulo (articulo, descripcion, clasificacion_2, codigo_barras_vent, codigo_barras_invt) values (?, ?, ?, ?, ?)', [el.ARTICULO, el.DESCRIPCION, el.CLASIFICACION_2, el.CODIGO_BARRAS_VENT, el.CODIGO_BARRAS_INVT])
+              })
+
+              await db.close()
+              alert('Repuestos sincronizados...')
+            } else { 
+              alert('No existen datos en el servidor')
+            }
+
+          } catch (error) { alert(error) }
+          this.status = ''
+          this.loadOff()
+        } else { alert('No existe la base de datos local') }
       },
       // Sync Exists
       async syncExists() {
-        this.loadOn()
-        this.status = 'Obteniendo datos del servidor'
-        var dDt = []
+        if (Sqlite.exists('local')) {
+          this.loadOn()
+          try {
+            const db = await Sqlite('local')
 
-        axios.get(this.api+'lote').then(res => {
+            // Drop current stock
+            this.status = 'Borrando base de datos local (Existencias)'
+            await db.execSQL('delete from existencia_lote')
 
-          this.status = 'Sincronizando datos en la base de datos local...'
-          if (Sqlite.exists('local')) {
-            var promise = new Sqlite('local', (er) => {
-              if (er) { alert(er) }
-            })
+            // Read stock from server
+            this.status = 'Obteniendo datos del servidor'
+            let res = await Http.getJSON(`${this.api}/lote`)
 
-            // Drop table existencia lote before insert data
-            promise.then(db => {
-              db.execSQL('delete from existencia_lote')
-            })
-
-            // Loop data to insert into table
-            res.data.forEach(cb => {
-              promise.then(db => {
-                db.execSQL('insert into existencia_lote (bodega, articulo, descripcion, localizacion, clasificacion_2, cant_disponible, cant_reservada) values (?, ?, ?, ?, ?, ?, ?)', [cb.BODEGA, cb.ARTICULO, cb.DESCRIPCION, cb.LOCALIZACION, cb.CLASIFICACION_2, cb.CANT_DISPONIBLE, cb.CANT_RESERVADA], (er, id) => {
-                  if (er) { alert(er) }
-                })
+            if (res) {
+              // Insert responsed data from server into local db (existencia_lote)
+              res.forEach(async (el, index) => {
+                this.status = `Sincronizando elemento ${index + 1} / ${res.length}`
+                db.execSQL('insert into existencia_lote (bodega, articulo, descripcion, localizacion, clasificacion_2, cant_disponible, cant_reservada) values (?, ?, ?, ?, ?, ?, ?)', [el.BODEGA, el.ARTICULO, el.DESCRIPCION, el.LOCALIZACION, el.CLASIFICACION_2, el.CANT_DISPONIBLE, el.CANT_RESERVADA])
               })
-            })
-          }
 
-          promise.then(db => { db.close()}) // Close connection before end
-
+              alert('Existencias sincronizadas...')
+            } else { alert('No hay datos en el servidor (Existencias)') }
+          } catch (error) { alert(error) }
           this.status = ''
           this.loadOff()
-        }).catch( er => {
-          alert(er)
-        })
+        } else { alert('No existe la base datos local') }
       },
       // Sync Warehouses
-      syncWarehouses() {
-        this.loadOn()
-        this.status = 'Obteniendo datos del servidor'
-        var dDt = []
+      async syncWarehouses() {
+        if (Sqlite.exists('local')) {
+          this.loadOn()
+          try {
+            this.status = 'Obteniendo datos del servidor...'
+            let res = await Http.getJSON(`${this.api}/bodega`)
 
-        axios.get(this.api+'bodega').then(res => {
+            if (res) {
+              const db = await Sqlite('local')
 
-          this.status = 'Sincronizando datos en la base de datos local...'
-          if (Sqlite.exists('local')) {
-            var promise = new Sqlite('local', (er) => {
-              if (er) { alert(er) }
-            })
-
-            // Drop table existencia lote before insert data
-            promise.then(db => {
-              db.execSQL('delete from bodegas')
-            })
-
-            // Loop data to insert into table
-            res.data.forEach(cb => {
-              promise.then(db => {
-                db.execSQL('insert into bodegas (bodega, nombre) values (?, ?)', [cb.BODEGA, cb.NOMBRE], (er, id) => {
-                  if (er) { alert(er) }
-                })
+              // Drop table existencia lote before insert data
+              this.status = 'Borrando bodegas locales...'
+              await db.execSQL('delete from bodegas')
+              // Loop data to insert into table
+              res.forEach(async (el, index) => {
+                this.status = `Insertando elemento ${index + 1} / ${res.length}`
+                await db.execSQL('insert into bodegas (bodega, nombre) values (?, ?)', [el.BODEGA, el.NOMBRE])
               })
-            })
+              await db.close()
+              alert('Bodegas sincronizadas...')
+            } else { alert('No hay datos en el servidor') }
+          } catch (error) { 
+            alert(error)
           }
-
-          promise.then(db => { db.close()}) // Close connection before end
-
-          this.status = ''
           this.loadOff()
-        }).catch( er => {
-          alert(er)
-        })
+          this.status = ''
+        } else {
+          alert('No existe la base de datos local')
+        }
       },
       // Sync Locations method
-      syncLocations() {
-        this.loadOn()
-        this.status = 'Obteniendo datos del servidor'
-        var dDt = []
+      async syncLocations() {
+        if (Sqlite.exists('local')) {
+          this.loadOn()
+          
+          try {
+            this.status = 'Obteniendo datos del servidor'
+            let res = await Http.getJSON(`${this.api}/localizacion`)
 
-        axios.get(this.api+'localizacion').then(res => {
+            if (res) {
+              const db = await Sqlite('local')
+              // Drop table localizaciones before insert data
+              await db.execSQL('delete from localizaciones')
 
-          this.status = 'Sincronizando datos en la base de datos local...'
-          if (Sqlite.exists('local')) {
-            var promise = new Sqlite('local', (er) => {
-              if (er) { alert(er) }
-            })
-
-            // Drop table existencia lote before insert data
-            promise.then(db => {
-              db.execSQL('delete from localizaciones')
-            })
-
-            // Loop data to insert into table
-            res.data.forEach(cb => {
-              promise.then(db => {
-                db.execSQL('insert into localizaciones (bodega, localizacion, descripcion) values (?, ?, ?)', [cb.BODEGA, cb.LOCALIZACION, cb.DESCRIPCION], (er, id) => {
-                  if (er) { alert(er) }
-                })
+              // Loop data to insert into table
+              res.forEach(async (el, index) => {
+                this.status = `Sincronizando elementos ${index + 1} / ${res.length}`
+                await db.execSQL('insert into localizaciones (bodega, localizacion, descripcion) values (?, ?, ?)', [el.BODEGA, el.LOCALIZACION, el.DESCRIPCION])
               })
-            })
-          }
 
-          promise.then(db => { db.close()}) // Close connection before end
+              await db.close()
+              alert('Localizaciones sincronizadas')
+            } else { alert('No hay datos en el servidor') }
 
-          this.status = ''
+          } catch (error) { alert(error) }
           this.loadOff()
-        }).catch( er => {
-          alert(er)
-        })
+          this.status = ''
+        } else {
+          alert('No existe la base de datos local')
+        }
+      },
+      async checkData() {
+        try {
+          if (Sqlite.exists('local')) {
+            const db = await Sqlite('local')
+
+            let data = await db.all('select * from existencia_lote')
+            alert(JSON.stringify(data.length))
+            await db.close()
+          }
+        } catch (error) {
+          alert(error)
+        }
       }
     }
   }

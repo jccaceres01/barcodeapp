@@ -5,13 +5,13 @@
       <ActionItem @tap="fillOutputs"
         ios.systemIcon="13" ios.position="right"
         android.systemIcon="ic_menu_refresh" />
-      <ActionItem @tap="$navigateTo(newOut)"
+      <ActionItem @tap="createNewOutput"
         ios.systemIcon="4" ios.position="right"
         android.systemIcon="ic_menu_add" />
     </ActionBar>
     <StackLayout orientation="vertical">
-      <ActivityIndicator :busy="busy" v-show="busy" />
-      <SearchBar hint="Buscar Salidas" v-model="criteria" @textChange="" @submit="" v-show="(outputs.length > 0)" />
+      <ActivityIndicator :busy="$store.state.loading" v-show="$store.state.loading" />
+      <SearchBar hint="Buscar Salidas" v-model="criteria" v-show="(outputs.length > 0)" />
       <Label text="No hay Salidas" v-show="!(outputs.length > 0)" fontSize="20" textWrap="true" verticalAlignment="center" horizontalAlignment="center" marginTop="10" />
       <ListView for="(item, index) in filtered" @itemTap="showViewOutput" height="100%">
         <v-template>
@@ -47,8 +47,8 @@
 
 <script>
   import conf from '../../customconfig.json'
-  import axios from 'axios'
-
+  import { Http } from '@nativescript/core'
+  import { mapActions } from 'vuex'
   import NewOutput from './NewOutput'
   import ViewOutput from './ViewOutput'
 
@@ -75,27 +75,26 @@
       this.fillOutputs()
     },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() { this.busy = false },
+      ...mapActions(['loadOn', 'loadOff']),
       clearAll() {
         this.outputs = []
         this.fillOutputs()
       },
-      fillOutputs() {
+      async fillOutputs() {
         this.outputs = []
+
         this.loadOn()
-        axios.get(this.api+'outputs').then(res => {
-          this.outputs = res.data
-          this.loadOff()
-        }).catch(er => {
-          alert(er)
-            .then(() => {
-              this.clearAll()
-            });
-        })
+        try { 
+          let res = await Http.getJSON(`${this.api}/outputs`)
+          this.outputs = res
+        } catch (er) { alert(er) }
+        this.loadOff()
       },
       showViewOutput(event) {
         this.$navigateTo(this.viewOutput, {props: {output: event.item}})
+      },
+      createNewOutput() {
+        this.$navigateTo(this.newOut, { props: { parent: this } })
       }
     }
   }

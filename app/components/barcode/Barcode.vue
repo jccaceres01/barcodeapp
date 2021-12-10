@@ -9,10 +9,10 @@
     </ActionBar>
 
     <StackLayout orientation="vertical">
-      <ActivityIndicator :busy="busy" @busyChange="" width="30" height="30" v-show="busy" />
-      <SearchBar hint="Buscar Repuesto" v-model="searchCriteria" @textChange="" @submit="fintItems" v-show="!hasItemSelected" width="*" height="50" />
+      <ActivityIndicator :busy="$store.state.loading" width="30" height="30" v-show="$store.state.loading" />
+      <SearchBar hint="Buscar Repuesto" v-model="searchCriteria" @submit="fintItems" v-show="!hasItemSelected" width="*" height="50" />
       <!-- Result List -->
-      <ListView for="(item, index) in resultList" @itemTap="" height="100%"  v-show="(resultList.length > 0)">
+      <ListView for="(item, index) in resultList" height="100%"  v-show="(resultList.length > 0)">
         <v-template>
           <StackLayout orientation="vertical">
             <FlexboxLayout flexDirection="row" class="p-l-2">
@@ -81,9 +81,10 @@
 </template>
 
 <script>
-  import axios from 'axios'
   import conf from '../../customconfig.json'
   import PickBarcodeComponent from '../syncOffline/dialogs/PickBarcodeComponent'
+  import { mapActions } from 'vuex'
+  import { Http } from '@nativescript/core'
 
   export default {
     computed: {
@@ -99,7 +100,6 @@
     data() {
       return {
         api: conf.api,
-        busy: false,
         searchCriteria: '',
         resultList: [],
         barcode_input: '',
@@ -113,8 +113,7 @@
       }
     },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() { this.busy = false },
+      ...mapActions(['loadOn', 'loadOff']),
       clearAll() {
         this.loadOff()
         this.barcode_input = ''
@@ -127,45 +126,49 @@
 
         this.searchCriteria = ''
       },
-      fintItems() {
+      async fintItems() {
         if (this.searchCriteria.trim() != '') {
           this.loadOn()
-          axios.get(this.api+'search/articulos', {
-            params: {
-              criteria: this.searchCriteria
-            }
-          }).then( res => {
-            this.resultList = res.data
-            this.loadOff()
-          }).catch( er => {
+          try {
+            let res = await Http.getJSON(`${this.api}/search/articulos?criteria=${this.searchCriteria}`)
+            this.resultList = res
+          } catch (er) {
             alert(er)
-            this.loadOff()
-          })
+          }
+
+          this.loadOff()
         } else {
           alert('Ingrese un valor en el campo de busqueda')
         }
       },
-      readBarcode(item, index) {
-        this.$showModal(this.pickBarcodeComponent).then( res => {
-          if (res.trim() !== '') {
-            item.CODIGO_BARRAS_VENT = res
-            item.CODIGO_BARRAS_INVT = res
+      async readBarcode(item, index) {
+        let modalValue = await this.$showModal(this.pickBarcodeComponent)
 
-            this.loadOn()
-            axios.put(this.api+'articulos/'+item.ARTICULO, {
-              'CODIGO_BARRAS_VENT': item.CODIGO_BARRAS_VENT,
-              'CODIGO_BARRAS_INVT': item.CODIGO_BARRAS_INVT
-            }).then( axiosRes => {
-              alert('Código de Barras Agregado')
-              this.loadOff()
-            }).catch( er => {
-              alert(er)
-              this.loadOff()
+        if (modalValue.trim() !== '') {
+          item.CODIGO_BARRAS_VENT = modalValue
+          item.CODIGO_BARRAS_INVT = modalValue
+
+          this.loadOn()
+
+          try {
+            let res = await Http.request({
+              url: `${this.api}/articulos/${item.ARTICULO}`,
+              method: 'PUT',
+              headers: {'Content-Type': 'Application/json'},
+              content: JSON.stringify({
+                'CODIGO_BARRAS_VENT': item.CODIGO_BARRAS_VENT,
+                'CODIGO_BARRAS_INVT': item.CODIGO_BARRAS_INVT
+              })
             })
-          } else {
-            alert('No se escaneo ningun código')
+            alert('Código de Barras Agregado')
+          } catch (er) {
+            alert(er)
           }
-        })
+
+          this.loadOff()
+        } else {
+          alert('No se escaneo ningun código')
+        }
       }
     },
   }

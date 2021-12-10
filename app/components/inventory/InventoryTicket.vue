@@ -17,9 +17,9 @@
     </ActionBar>
 
     <StackLayout orientation="vertical">
-      <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
-      <SearchBar hint="Buscar Boleta." v-model="searchPhrase" @textChange="" @submit="" />
-      <ListView for="item in filtered" @itemTap="ticketDetail" height="auto">
+      <ActivityIndicator :busy="$store.state.loading" v-show="$store.state.loading" />
+      <SearchBar hint="Buscar Boleta." v-model="searchPhrase" />
+      <ListView for="item in filtered" @itemTap="ticketDetail" height="auto" v-if="hasTickets">
         <v-template>
           <GridLayout columns="auto, *, auto" rows="auto, auto">
             <Label class="accent-bg scc-yellow" verticalAlignment="center" col="0" row="0" :text="item.BOLETA" width="80" height="80" margin="3" />
@@ -55,17 +55,28 @@
           </GridLayout>
         </v-template>
       </ListView>
+      <!-- No tickets -->
+      <Flexboxlayout flexDirection="column" justifyContent="center" alignItems="center"  flexWrap="false" v-else>
+        <Label :text="'\uf46c'" class="fas" fontSize="30" />
+        <Label text="No hay Boletas" textWrap="true" fontSize="30" style="color: gray; opacity: 0.30" />
+      </Flexboxlayout>
     </StackLayout>
   </Page>
 </template>
 
 <script>
   import conf from '../../customconfig.json'
-  import axios from 'axios'
+  import { mapActions } from 'vuex'
+  import { Http } from '@nativescript/core'
   import TicketDetails from './dialogs/TicketDetails'
   import NewInventoryTicket from './NewInventoryTicket'
 
   export default {
+    data() {
+      return {
+        icon: '\uf46c'
+      }
+    },
     computed: {
       filtered() {
         return this.tickets.filter(cb => {
@@ -74,6 +85,9 @@
             (cb.LOCALIZACION.toLowerCase().trim().indexOf(this.searchPhrase.trim().toLowerCase()) !== -1) ||
             (cb.DESCRIPCION.toLowerCase().trim().indexOf(this.searchPhrase.trim().toLowerCase()) !== -1)
         })
+      },
+      hasTickets() {
+        return this.tickets.length > 0
       }
     },
     created() {
@@ -81,39 +95,42 @@
     },
     data() {
       return {
-        apiUrl: conf.api,
+        api: conf.api,
         ticketDet: TicketDetails,
         newInvTicket: NewInventoryTicket,
-        busy: false,
         searchPhrase: '',
         tickets: []
       }
     },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() { this.busy = false},
+      ...mapActions(['loadOn', 'loadOff']),
+
       clearAll() {
-        this.loadOff()
         this.tickets = []
       },
-      filltickets() {
+      async filltickets() {
+
         this.loadOn()
-        this.searchPhrase = ''
-        axios.get(this.apiUrl+'inventory/ticket').then(res => {
-          this.tickets = res.data
-          this.loadOff()
-        }).catch(er => {
-          alert(er)
-          this.clearAll()
-        })
+        try {
+          let res = await Http.getJSON(`${this.api}/inventory/ticket`)
+          this.tickets = res
+        } catch (error) { alert(error) }
+        this.loadOff()
       },
       ticketDetail(event) {
         this.$navigateTo(this.ticketDet, {
-          props: event.item
+          props: {
+            ticket: event.item,
+            parent: this
+          }
         })
       },
       newTicket() {
-        this.$navigateTo(this.newInvTicket)
+        this.$navigateTo(this.newInvTicket, {
+          props: {
+            parent: this
+          }
+        })
       }
     }
   }
@@ -125,9 +142,6 @@
   // End custom common variables
 
   // Custom styles
-  .fa {
-      color: $accent-dark;
-  }
 
   .accent-bg {
     background: $accent-dark;
@@ -144,5 +158,9 @@
 
   .info {
       font-size: 20;
+  }
+
+  .mediumicon {
+      font-size: 30;
   }
 </style>

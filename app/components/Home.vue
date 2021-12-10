@@ -38,8 +38,6 @@
   import SyncInventoryTicketComponent from './syncOffline/SyncInventoryTicketComponent'
 
   export default {
-    computed: {
-    },
     data() {
       return {
         appName: conf.appname,

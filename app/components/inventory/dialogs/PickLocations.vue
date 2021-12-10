@@ -1,12 +1,12 @@
 <template>
   <Page>
     <StackLayout>
-      <Label text="Localizaciones" fontSize="30" />
-      <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
-      <TextField v-model="criteria" hint="Filtrar" @returnPress="" keyboardType="text "/>
+      <Label :text="'Localizaciones ('+ this.warehouse +')' " fontSize="30" class="accent-bg scc-yellow" />
+      <ActivityIndicator :busy="$store.state.loading" v-if="$store.state.loading" />
+      <TextField v-model="criteria" hint="Filtrar" keyboardType="text "/>
       <ListView for="item in filtered" @itemTap="returnValue" width="*" height="100%">
         <v-template>
-          <Label :text="item.LOCALIZACION" fontSize="20" />
+          <Label :text="item.LOCALIZACION" fontSize="35" />
         </v-template>
       </ListView>
     </StackLayout>
@@ -15,13 +15,16 @@
 
 <script>
   import conf from '../../../customconfig.json'
-  import axios from 'axios'
+  import { Http } from '@nativescript/core'
+  import { mapActions } from 'vuex'
 
   export default {
+    created() {
+      this.fillLocations()
+    },
     data() {
       return {
-        apiUrl: conf.api,
-        busy: false,
+        api: conf.api,
         criteria: '',
         locations: [],
       }
@@ -34,22 +37,22 @@
         })
       }
     },
-    created() {
-      this.fillLocations()
+    props: {
+      warehouse: {require: true, type: String, default: null}
     },
-    props: ['warehouse'],
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() { this.busy = false},
-      fillLocations() {
+      ...mapActions(['loadOn', 'loadOff']),
+
+      async fillLocations() {
         this.loadOn()
-        axios.get(this.apiUrl+'localizacion/'+this.warehouse).then( res => {
-          this.locations = res.data
-          this.loadOff()
-        }).catch( er => {
-          alert(er)
+        try {
+          let res = await Http.getJSON(`${this.api}/localizacion/${this.warehouse}`)
+          this.locations = res
+        } catch (error) { 
+          alert(error)
           this.$modal.close()
-        })
+        }
+        this.loadOff()
       },
       returnValue(event) {
         this.$modal.close(event.item)
@@ -59,4 +62,24 @@
 </script>
 
 <style lang="scss" scoped>
+  // Start custom common variables
+    @import '../../../app-variables';
+    // End custom common variables
+
+    // Custom styles
+    .fa {
+        color: $accent-dark;
+    }
+
+    .accent-bg {
+      background: $accent-dark;
+    }
+
+    .scc-yellow {
+      color: $scc-yellow;
+    }
+
+    .info {
+        font-size: 20;
+    }
 </style>

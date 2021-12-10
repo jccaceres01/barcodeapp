@@ -5,8 +5,8 @@
     </ActionBar>
 
     <StackLayout orientation="vertical">
-      <ActivityIndicator :busy="busy" @busyChange="" v-show="busy" />
-      <SearchBar hint="Buscar Repuesto" v-model="criteria" @textChange="" @submit="doSearch" />
+      <ActivityIndicator :busy="$store.state.loading" v-if="$store.state.loading" />
+      <SearchBar hint="Buscar Repuesto" v-model="criteria" @submit="doSearch" />
       <!--  -->
       <ListView for="(item, index) in searchList" @itemTap="onItemTap" height="100%"  v-show="!ifItemSeleceted">
         <v-template>
@@ -118,6 +118,7 @@
 <script>
   import Sqlite from 'nativescript-sqlite'
   import PickBarcodeComponent from './dialogs/PickBarcodeComponent'
+  import { mapActions } from 'vuex'
 
   export default {
     data() {
@@ -136,17 +137,17 @@
         pickBarcode: PickBarcodeComponent
       }
     },
+    props: {
+      parent: {type: Object}
+    },
     computed: {
       ifItemSeleceted() {
         return (this.itemSelected.articulo !== '')
       }
     },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() {
-        this.busy = false
-        this.status = ''
-      },
+      ...mapActions(['loadOn', 'loadOff']),
+
       // Clear items list
       clearList() {
         this.searchList = []
@@ -164,7 +165,7 @@
             db.resultType(Sqlite.RESULTSASOBJECT)
             db.all('select * from articulo where descripcion like ? or'+
             ' articulo like ?',['%'+this.criteria+'%', '%'+this.criteria+'%'],
-             (er, res) => {
+            (er, res) => {
               if (!er) {
                 if (res.length > 0) {
                   this.searchList = res
@@ -218,6 +219,7 @@
             })
 
             this.loadOff()
+            this.parent.fillScanned()
             this.$navigateBack()
           } else { alert('No existe la base de datos local') }
         } else { alert('Debe agregar el código de barras') }

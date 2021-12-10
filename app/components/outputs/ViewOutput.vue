@@ -3,8 +3,8 @@
     <ActionBar :title="output.DOCUMENTO_INV" class="action-bar">
       <NavigationButton text="Atras" android.systemIcon="ic_menu_back" @tap="$navigateBack" />
     </ActionBar>
-    <GridLayout>
-      <ActivityIndicator :busy="busy" />
+    <StackLayout>
+      <ActivityIndicator :busy="$store.state.loading" v-if="$store.state.loading" />
       <TabView :selectedIndex="tabSelectedIndex" @selectedIndexChange="changeIndex">
         <!-- Output Detail -->
         <TabViewItem title="Detalle">
@@ -42,7 +42,7 @@
         <!-- Lines Tab -->
         <TabViewItem title="Lineas">
           <GridLayout padding="10">
-            <ListView for="item, in lines" @itemTap="">
+            <ListView for="item, in lines" >
               <v-template>
                 <GridLayout columns="auto, *, auto" rows="auto, auto">
                   <Label class="accent-bg scc-yellow" verticalAlignment="center" horizontalAlignment="center" fontSize="30" col="0" row="0" :text="item.LINEA_DOC_INV" width="80" height="80" margin="3" />
@@ -104,11 +104,11 @@
               </StackLayout>
               <StackLayout orientation="horizontal" width="*" height="50">
                 <Label text="Habilitar Cantidades: " fontSize="20" class="fa" />
-                <Switch v-model="enableQuantity" @checkedChange="onCheckedChange" />
+                <Switch @checkedChange="onCheckedChange" v-model="enableQuantity" />
               </StackLayout>
-              <TextField v-model="quantity" hint="Cantidad" @textChange="" @returnPress="" keyboardType="number" :editable="enableQuantity"/>
-              <SearchBar hint="Buscar Codigo de Barras" v-model="barcodeCriteria" @textChange="" @submit="getItem" />
-              <TextField v-model="itemId" hint="Código Softland" @textChange="onTextChange" @returnPress="onReturnPress" keyboardType="text" editable="false" />
+              <TextField hint="Cantidad" keyboardType="text" :editable="enableQuantity" v-model="quantity" />
+              <SearchBar hint="Buscar Codigo de Barras" v-model="barcodeCriteria" @submit="getItem" />
+              <TextField v-model="itemId" hint="Código Softland" keyboardType="text" editable="false" />
               <Button text="Agregar Linea" @tap="addLine">
                 <Span class="fa" text.decode="&#xf0c7; "/>
               </Button>
@@ -116,13 +116,14 @@
           </ScrollView>
         </TabViewItem>
       </TabView>
-    </GridLayout>
+    </StackLayout>
   </Page>
 </template>
 
 <script>
   import conf from '../../customconfig.json'
-  import axios from 'axios'
+  import { mapActions } from 'vuex'
+  import { Http } from '@nativescript/core'
   import CostCenter from './OutputsDialogs/CostCenter'
   import StorageSelect from './OutputsDialogs/StorageSelect'
   import LocationSelect from './OutputsDialogs/LocationSelect'
@@ -137,12 +138,11 @@
         storageSelect: StorageSelect,
         locationSelect: LocationSelect,
         // Data
-        busy: false,
         tabSelectedIndex: 0,
         barcodeCriteria: '',
         itemId: '',
+        warehouses: [],
         lines: [],
-        locations: [],
         selectedCostCenter: {id: '', value: ''},
         selectedStorage: {BODEGA: '', NOMBRE: ''},
         selectedLocation: {BODEGA: '', LOCALIZACION: '', DESCRIPCION: ''},
@@ -154,13 +154,14 @@
       this.fillWarehouses()
     },
     methods: {
-      loadOn() { this.busy = true },
-      loadOff() { this.busy = false },
-      fillWarehouses() {
+      ...mapActions(['loadOn', 'loadOff']),
+      
+      async fillWarehouses() {
         this.loadOn()
-        axios.get(this.api+'bodega').then(res => {
-          this.warehouses = []
-          res.data.forEach(cb => {
+        try {
+          let res = await Http.getJSON(`${this.api}/bodega`)
+
+          res.forEach(cb => {
             this.warehouses.push({
               BODEGA: cb.BODEGA,
               NOMBRE: cb.NOMBRE,
@@ -169,52 +170,42 @@
               }
             })
           })
-          this.loadOff()
-        }).catch(er => {
-          alert(er).then(() => {
-            this.clearAll()
-          })
-        })
+        } catch (er) { alert(er) }
+        this.loadOff()
       },
-      deleteLine(item) {
-        confirm('¿Desea borrar esta linea?')
-          .then(result => {
-            if (result) {
-              this.loadOn()
-              axios.delete(this.api+'outputlines', {
-                params: {
-                  documento_inv: this.output.DOCUMENTO_INV,
-                  articulo: item.ARTICULO,
-                  bodega: item.BODEGA,
-                  localizacion: item.LOCALIZACION,
-                  linea: item.LINEA_DOC_INV,
-                  cantidad: item.CANTIDAD
-                }
-              }).then(res => {
-                switch (res.data) {
-                  case 'noExistsLote':
-                    alert('No se encontro el lote de la existencia')
-                    break;
-                  case 'noExistsBodega':
-                    alert('No se encontro la existencia en bodega')
-                    break;
-                  case 'noExistsReserva':
-                    alert('No se encontro la existencia en reserva')
-                    break;
-                  case 'lineDroped':
-                    alert('Linea Borrada')
-                    break;
-                  default:
-                    break;
-                }
-                this.fillOutputLines()
-              }).catch(er => {
-                alert(er).then(() => {
-                  this.clearAll()
-                })
-              })
+      async deleteLine(item) {
+        let con = await confirm('¿Desea borrar esta linea?')
+        if (con) {
+          this.loadOn()
+          try {
+            let res = await Http.request({
+              url: `${this.api}/outputlines?documento_inv=${this.output.DOCUMENTO_INV}&articulo=${item.ARTICULO}&bodega=${item.BODEGA}&localizacion=${item.LOCALIZACION}&linea=${item.LINEA_DOC_INV}&cantidad=${item.CANTIDAD}`,
+              method: 'delete',
+              headers: { 'Content-Type': 'application/json'},
+            })
+
+            switch (res.content.toJSON()) {
+              case 'noExistsLote':
+                alert('No se encontro el lote de la existencia')
+                break;
+              case 'noExistsBodega':
+                alert('No se encontro la existencia en bodega')
+                break;
+              case 'noExistsReserva':
+                alert('No se encontro la existencia en reserva')
+                break;
+              case 'lineDroped':
+                alert('Linea Borrada')
+                break;
+              default:
+                alert('Noting')
+                break;
             }
-          });
+            this.fillOutputLines()
+
+          } catch(er) { alert(er) }
+          this.loadOff()
+        }
       },
       clearAll() {
         this.lines = []
@@ -228,22 +219,22 @@
         this.loadOff()
       },
       onCheckedChange() {
-        if (this.enableQuantity == false) {
+        if (this.enableQuantity === false) {
           this.quantity = 1
         }
       },
-      fillOutputLines() {
-        this.loadOn()
-        axios.get(this.api+'outputlines/'+this.output.DOCUMENTO_INV).then(res => {
+      async fillOutputLines() {
+        try {
+          let res = await Http.getJSON(`${this.api}/outputlines/${this.output.DOCUMENTO_INV}`)
           this.lines = []
-          this.lines = res.data
-          this.loadOff()
-        }).catch(er => {
+          this.lines = res
+
+        } catch (er) { 
           alert(er)
-            .then(() => {
-              this.clearAll()
-            });
-        })
+          this.clearAll()
+        }
+
+        this.loadOff()
       },
       changeIndex(index) {
         switch (index.value) {
@@ -255,90 +246,77 @@
           case 2:
             break;
           default:
-            alert('Error en el valor devuelto por el indice de pestaña').then(() => {
+            alert('Error en el valor devuelto por el indice de pestaña')
+            .then(() => {
               this.clearAll()
             })
         }
       },
       selectCostCenter() {
-        this.$showModal(this.costCenter).then(res => {
-          if (res != null) {
+        this.$showModal(this.costCenter, {fullscreen: true}).then(res => {
+          if (res) {
             this.selectedCostCenter = res
           } else {
             alert('No se ha seleccionado ningun centro de costo')
           }
         })
       },
-      selectStorage() {
-        this.$showModal(this.storageSelect).then(res => {
-          if (res != null) {
-            this.selectedStorage = res
+      async selectStorage() {
+        let storageSelection = await this.$showModal(this.storageSelect, 
+          {fullscreen: true})
+        
+        if (storageSelection) {
+          this.selectedStorage = storageSelection
+          this.fillLocations(storageSelection)
+        } else {
+          alert('No se ha seleccionado ninguna bodega.')
+        }
+      },
+      async selectLocation() {
+        let loc = await this.$showModal(this.locationSelect, 
+          {fullscreen: true, props: {storage: this.selectedStorage.BODEGA}})
+        if (loc) {
+          this.selectedLocation = loc
+        } else { alert('No se selecciono una localización') }
+      },
+      async getItem() {
+        if (this.barcodeCriteria !== '') {
+          try {
             this.loadOn()
-            axios.get(this.api+'localizacion/'+this.selectedStorage.BODEGA).then(res => {
-              this.locations = res.data
-              this.loadOff()
-            }).catch(er => {
-              alert(er)
-              this.clearAll()
-            })
-          } else {
-            alert('No se ha seleccionado ninguna bodega.')
-          }
-        })
-      },
-      selectLocation() {
-        this.$showModal(this.locationSelect, {props: {locations: this.locations}}).then(res => {
-          if (res != null) {
-            this.selectedLocation = res
-          } else {
-            alert('No se selecciono una localización')
-          }
-        })
-      },
-      getItem() {
-        if (this.barcodeCriteria != '') {
-          this.loadOn()
-          axios.get(this.api+'buscar', {
-            params: {
-              barcode: this.barcodeCriteria
-            }
-          }).then(res => {
-            if (res.data.length > 0) {
-              if (res.data.length > 1) {
+            let res = await Http.getJSON(`${this.api}/buscar?barcode=${this.barcodeCriteria}`)
+            if (res) {
+              if (res.length > 1) {
                 alert('Existen varios articulos con este código de barras')
                 this.barcodeCriteria = ''
-              } else {
-                this.itemId = res.data[0].ARTICULO
+              } else if (res.length == 1) {
+                this.itemId = res[0].ARTICULO
                 this.addLine()
+              } else if (res.length <= 0) {
+                alert('Repuesto no encontrado')
               }
-            } else {
-              alert('Respuesto no encontrado')
-            }
-          }).catch(er => {
-            alert(er)
-          })
-          this.loadOff()
+            } else { alert('Respuesto no encontrado') }
+            this.loadOff()
+          } catch (error) { alert(error) }
         } else {
           alert('Debe rellenar el campo de busqueda con el código de barras')
         }
       },
-      addLine() {
+      async addLine() {
         if (
-          this.selectStorage.BODEGA != '' &&
-          this.selectedCostCenter.value != '' &&
-          this.selectedLocation.LOCALIZACION != '' &&
-          this.itemId != ''
+          this.selectStorage.BODEGA !== '' &&
+          this.selectedCostCenter.value !== '' &&
+          this.selectedLocation.LOCALIZACION !== '' &&
+          this.itemId !== ''
         ) {
           this.loadOn()
-          axios.post(this.api+'outputline', {
-            documento_inv: this.output.DOCUMENTO_INV,
-            bodega: this.selectedStorage.BODEGA,
-            localizacion: this.selectedLocation.LOCALIZACION,
-            centro_costo: this.selectedCostCenter.id,
-            cantidad: this.quantity,
-            articulo: this.itemId
-          }).then(res => {
-            switch (res.data) {
+          try {
+            let res = await Http.request({
+              url: `${this.api}/outputline?documento_inv=${this.output.DOCUMENTO_INV}&bodega=${this.selectedStorage.BODEGA}&localizacion=${this.selectedLocation.LOCALIZACION}&centro_costo=${this.selectedCostCenter.id}&cantidad=${this.quantity}&articulo=${this.itemId}`,
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            })
+
+            switch (res.content.toJSON()) {
               case 'inserted':
                 alert('Linea Agregada')
                 break;
@@ -355,10 +333,11 @@
                 break;
             }
             this.clearHalfForm()
-          }).catch(er => {
-            alert(er)
+          } catch (error) {
+            alert(error)
             this.clearHalfForm()
-          })
+          }
+          this.loadOff()
         } else {
           alert('No puede dejar campos vacios')
         }
